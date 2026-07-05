@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  postgres:
+    build: ./postgres
+    container_name: primer-db
+    environment:
+      POSTGRES_DB: primer
+      POSTGRES_USER: primer
+      POSTGRES_PASSWORD: primer_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/seed_data:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U primer"]
+      interval: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: primer-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: primer-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://primer:primer_dev@postgres:5432/primer
+      REDIS_URL: redis://redis:6379
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+
+  dashboard:
+    build: ./frontend/dashboard
+    container_name: primer-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
