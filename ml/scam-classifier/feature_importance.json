@@ -1,0 +1,12 @@
+{
+  "caller_complaint_count": 0.6591488718986511,
+  "urgency_phrase_count": 0.1661076843738556,
+  "call_count_from_number_24h": 0.03727979212999344,
+  "caller_risk_score": 0.026269197463989258,
+  "is_international_origin": 0.021353261545300484,
+  "script_similarity_max": 0.019363753497600555,
+  "call_duration_sec": 0.018778663128614426,
+  "spoofing_indicator": 0.018578989431262016,
+  "time_of_day_hour": 0.017043936997652054,
+  "callee_age_group": 0.01607595756649971
+}
