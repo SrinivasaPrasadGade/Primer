@@ -189,10 +189,10 @@ SRINIVAS = "(SELECT id FROM core.users WHERE email = 'srinivas@primer.demo')"
 SUMANTH_USER = "(SELECT id FROM core.users WHERE email = 'sumanth@primer.demo')"
 
 
-# ── 1. scam_sentinel.scam_sessions (50: 10 RED / 20 AMBER / 20 YELLOW) ──────
+# ── 1. scam_sentinel.scam_sessions (500: 20% RED / 40% AMBER / 40% YELLOW) ──
 def gen_scam_sessions():
     emit("-- scam_sentinel.scam_sessions")
-    levels = ["RED"] * 10 + ["AMBER"] * 20 + ["YELLOW"] * 20
+    levels = ["RED"] * 100 + ["AMBER"] * 200 + ["YELLOW"] * 200
     random.shuffle(levels)
     scam_keys = list(SCAM_TYPES.keys())
     scam_weights = list(SCAM_TYPES.values())
@@ -241,11 +241,11 @@ def gen_scam_sessions():
     emit("")
 
 
-# ── 2. scam_sentinel.number_reputation (30+) ────────────────────────────────
+# ── 2. scam_sentinel.number_reputation (100) ────────────────────────────────
 def gen_number_reputation():
     emit("-- scam_sentinel.number_reputation")
     numbers = set()
-    while len(numbers) < 35:
+    while len(numbers) < 100:
         numbers.add(rand_phone())
 
     for phone in numbers:
@@ -268,12 +268,12 @@ def gen_number_reputation():
     emit("")
 
 
-# ── 3. scam_sentinel.scam_script_corpus (30+) ───────────────────────────────
+# ── 3. scam_sentinel.scam_script_corpus (50) ────────────────────────────────
 def gen_script_corpus():
     emit("-- scam_sentinel.scam_script_corpus")
     names = ["Sharma", "Verma", "Iyer", "Reddy", "Khan", "Rao", "Gupta"]
     count = 0
-    while count < 32:
+    while count < 50:
         lang, scam_type, title, content, phrases = random.choice(SCRIPT_TEMPLATES)
         rendered = content.replace("{name}", random.choice(names))
         emit(f"""INSERT INTO scam_sentinel.scam_script_corpus
@@ -286,10 +286,10 @@ def gen_script_corpus():
     emit("")
 
 
-# ── 4. note_verify.counterfeit_serials (10+) ────────────────────────────────
+# ── 4. note_verify.counterfeit_serials (20) ─────────────────────────────────
 def gen_counterfeit_serials():
     emit("-- note_verify.counterfeit_serials")
-    for denomination in [500] * 8 + [2000] * 6:
+    for denomination in [500] * 10 + [2000] * 10:
         prefix = random.choice(["3AQ", "7CF", "1XK", "9GH", "4LM"])
         serial = f"{prefix}{random.randint(100000, 999999)}"
         emit(f"""INSERT INTO note_verify.counterfeit_serials
@@ -301,15 +301,17 @@ def gen_counterfeit_serials():
     emit("")
 
 
-# ── 5. fraud_graph.entities + edges + clusters (100+ / 200+, 4 clusters) ───
+# ── 5. fraud_graph.entities + edges + clusters (200+ / 400+, 6 clusters) ───
 def gen_fraud_graph():
     emit("-- fraud_graph.clusters")
-    cluster_ids = [uid() for _ in range(4)]
+    cluster_ids = [uid() for _ in range(6)]
     cluster_names = [
         "Mumbai Digital Arrest Ring",
         "Delhi CBI Impersonation Network",
         "Hyderabad Customs Scam Cell",
         "Bangalore UPI Mule Network",
+        "Chennai Tax Notice Syndicate",
+        "Pune Loan App Harassment Cell",
     ]
     for cid, name in zip(cluster_ids, cluster_names):
         emit(f"""INSERT INTO fraud_graph.clusters
@@ -324,7 +326,7 @@ def gen_fraud_graph():
     entity_types = ["phone_number", "bank_account", "upi_id", "person", "device", "ip_address"]
 
     for cid in cluster_ids:
-        n_entities = random.randint(24, 30)
+        n_entities = random.randint(35, 45)
         for _ in range(n_entities):
             etype = random.choices(entity_types, weights=[30, 20, 20, 15, 10, 5])[0]
             eid = uid()
@@ -355,7 +357,7 @@ def gen_fraud_graph():
     edges_generated = 0
     for cid in cluster_ids:
         members = entity_ids_by_cluster[cid]
-        n_edges = random.randint(50, 60)
+        n_edges = random.randint(70, 90)
         for _ in range(n_edges):
             src, tgt = random.sample(members, 2)
             rel = random.choice(relationships)
@@ -368,10 +370,10 @@ def gen_fraud_graph():
     emit("")
 
 
-# ── 6. geo_intel.incidents (200+) ───────────────────────────────────────────
+# ── 6. geo_intel.incidents (550) ────────────────────────────────────────────
 def gen_geo_incidents():
     emit("-- geo_intel.incidents")
-    for _ in range(220):
+    for _ in range(550):
         city, state, lat, lon = city_point()
         crime_type = random.choice(CRIME_TYPES)
         severity = random.choices(["low", "medium", "high", "critical"], weights=[20, 40, 30, 10])[0]
@@ -391,10 +393,10 @@ def gen_geo_incidents():
     emit("")
 
 
-# ── 7. qr_scans.scan_results — flagged/dangerous (5+) ───────────────────────
+# ── 7. qr_scans.scan_results — flagged/dangerous (10) ───────────────────────
 def gen_qr_flagged():
     emit("-- qr_scans.scan_results (flagged)")
-    for _ in range(7):
+    for _ in range(10):
         upi = rand_upi()
         emit(f"""INSERT INTO qr_scans.scan_results
             (id, user_id, qr_content, content_type, destination_account, risk_level,
@@ -408,7 +410,7 @@ def gen_qr_flagged():
     emit("")
 
 
-# ── 8. core.investigations + core.case_summaries (3+) ──────────────────────
+# ── 8. core.investigations + core.case_summaries (5) ────────────────────────
 def gen_case_summaries():
     emit("-- core.investigations + core.case_summaries")
     cases = [
@@ -421,6 +423,12 @@ def gen_case_summaries():
         ("Customs Seizure Scam — Hyderabad Courier Ring", "customs_seizure", "medium",
          "Courier/customs seizure scam operating from call centre with links to 40+ victim "
          "complaints across Telangana and Andhra Pradesh."),
+        ("Income Tax Notice Fraud — Bangalore Tech Corridor", "tax_evasion", "high",
+         "Fake Income Tax Investigation Wing calls targeting IT professionals, pressuring "
+         "victims to settle fabricated dues via UPI within a fixed window."),
+        ("Bank KYC Expiry Scam — Pune Retail Cluster", "bank_kyc", "medium",
+         "OTP-harvesting KYC expiry scam targeting retail bank customers, with proceeds "
+         "funnelled through a chain of newly opened mule accounts."),
     ]
     for title, ctype, priority, description in cases:
         inv_id = uid()
