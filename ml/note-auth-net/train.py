@@ -51,6 +51,10 @@ from torch.utils.data import DataLoader, Dataset
 
 RANDOM_STATE = 42
 IMG_SIZE = 380
+# Some source images are raw high-DPI scans (tens of megapixels). Downsize
+# before the NumPy conversion below so a handful of oversized files don't
+# blow up per-worker memory while waiting for Albumentations' own Resize.
+MAX_RAW_DIM = 800
 FEATURE_NAMES = ["watermark", "thread", "microprint", "intaglio", "colour_shift", "overall"]
 OVERALL_IDX = FEATURE_NAMES.index("overall")
 
@@ -98,7 +102,14 @@ class CurrencyDataset(Dataset):
         return len(self.filepaths)
 
     def __getitem__(self, idx):
-        image = Image.open(self.filepaths[idx]).convert("RGB")
+        with Image.open(self.filepaths[idx]) as raw:
+            # For JPEGs, ask libjpeg to decode at a reduced scale directly
+            # (cheaper than a full decode + separate downsize). No-op for
+            # other formats.
+            raw.draft("RGB", (MAX_RAW_DIM, MAX_RAW_DIM))
+            image = raw.convert("RGB")
+        if image.width > MAX_RAW_DIM or image.height > MAX_RAW_DIM:
+            image.thumbnail((MAX_RAW_DIM, MAX_RAW_DIM), Image.BILINEAR)
         image = self.transform(image=np.array(image))["image"]
         # Weak supervision: every head shares the genuine/counterfeit label
         # (see module docstring — no per-feature ground truth exists yet).
