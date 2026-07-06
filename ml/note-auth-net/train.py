@@ -17,6 +17,17 @@ verified signal, and should be replaced with real per-feature labels
 (e.g. crops from the *_Features datasets, hand-annotated) before this model is
 trusted to explain *why* a note failed rather than just whether it did.
 
+Performance (tuned for RTX 4060, 8GB VRAM):
+  - Mixed precision (AMP) is on by default on CUDA — roughly halves VRAM and
+    step time on Ampere/Ada GPUs. Disable with --no-amp if you see NaNs.
+  - Heads output logits and the loss is BCEWithLogitsLoss (AMP-safe; BCELoss
+    on sigmoid outputs is not). forward() still applies sigmoid, so inference
+    callers and the ONNX/TFLite export see probabilities as before, and
+    checkpoints remain key-compatible with the previous Sigmoid-in-Sequential
+    layout (Sigmoid held no parameters).
+  - channels_last memory format speeds up EfficientNet convs under AMP.
+  - Early stopping (--patience) ends the run when val AUC stops improving.
+
 Run:
     cd ml/note-auth-net
     python train.py --epochs 50 --batch-size 16
@@ -60,18 +71,21 @@ class NoteAuthNet(nn.Module):
     Input: 380x380 RGB image of currency note
     Output: 6 feature scores (watermark, thread, microprint, intaglio, colour_shift, overall)
     """
-    def __init__(self, num_features=6):
+    def __init__(self, num_features=6, pretrained=True):
         super().__init__()
-        self.backbone = timm.create_model("efficientnet_b4", pretrained=True, num_classes=0)
+        self.backbone = timm.create_model("efficientnet_b4", pretrained=pretrained, num_classes=0)
         feature_dim = self.backbone.num_features  # 1792 for B4
         self.heads = nn.ModuleList([
-            nn.Sequential(nn.Linear(feature_dim, 256), nn.ReLU(), nn.Dropout(0.3), nn.Linear(256, 1), nn.Sigmoid())
+            nn.Sequential(nn.Linear(feature_dim, 256), nn.ReLU(), nn.Dropout(0.3), nn.Linear(256, 1))
             for _ in range(num_features)
         ])
 
-    def forward(self, x):
+    def forward_logits(self, x):
         features = self.backbone(x)
         return torch.cat([head(features) for head in self.heads], dim=1)
+
+    def forward(self, x):
+        return torch.sigmoid(self.forward_logits(x))
 
 
 class CurrencyDataset(Dataset):
@@ -127,25 +141,34 @@ def load_splits(limit: int = None):
     return train_df.reset_index(drop=True), val_df.reset_index(drop=True), test_df.reset_index(drop=True)
 
 
-def run_epoch(model, loader, criterion, device, optimizer=None):
+def run_epoch(model, loader, criterion, device, optimizer=None, scaler=None, use_amp=False):
     is_train = optimizer is not None
     model.train(is_train)
     total_loss, all_targets, all_preds = 0.0, [], []
 
     with torch.set_grad_enabled(is_train):
         for images, targets in loader:
-            images, targets = images.to(device), targets.to(device)
-            outputs = model(images)
-            loss = criterion(outputs, targets)
+            images = images.to(device, non_blocking=True).to(memory_format=torch.channels_last)
+            targets = targets.to(device, non_blocking=True)
+
+            with torch.autocast(device_type=device.type, enabled=use_amp):
+                logits = model.forward_logits(images)
+                loss = criterion(logits, targets)
 
             if is_train:
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+                optimizer.zero_grad(set_to_none=True)
+                if scaler is not None:
+                    scaler.scale(loss).backward()
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    loss.backward()
+                    optimizer.step()
 
             total_loss += loss.item() * images.size(0)
+            probs = torch.sigmoid(logits[:, OVERALL_IDX].detach().float())
             all_targets.append(targets[:, OVERALL_IDX].detach().cpu().numpy())
-            all_preds.append(outputs[:, OVERALL_IDX].detach().cpu().numpy())
+            all_preds.append(probs.cpu().numpy())
 
     targets_np = np.concatenate(all_targets)
     preds_np = np.concatenate(all_preds)
@@ -191,42 +214,63 @@ def main():
     parser.add_argument("--img-size", type=int, default=IMG_SIZE)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--limit", type=int, default=None, help="Cap dataset size (debug/smoke runs)")
-    parser.add_argument("--num-workers", type=int, default=0)
+    parser.add_argument("--num-workers", type=int, default=4)
+    parser.add_argument("--patience", type=int, default=10,
+                        help="Stop early after this many epochs without val AUC improvement")
+    parser.add_argument("--no-amp", action="store_true", help="Disable mixed-precision training")
+    parser.add_argument("--no-pretrained", action="store_true",
+                        help="Skip the ImageNet weight download (offline smoke runs only — "
+                             "real training should always start from pretrained weights)")
     parser.add_argument("--skip-tflite-export", action="store_true")
     args = parser.parse_args()
 
     torch.manual_seed(RANDOM_STATE)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
+    use_amp = device.type == "cuda" and not args.no_amp
+    if device.type == "cuda":
+        torch.backends.cudnn.benchmark = True
+    print(f"Using device: {device} (AMP: {'on' if use_amp else 'off'})")
 
     train_df, val_df, test_df = load_splits(limit=args.limit)
     print(f"Train/val/test sizes: {len(train_df)}/{len(val_df)}/{len(test_df)}")
 
+    loader_kwargs = dict(
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        pin_memory=device.type == "cuda",
+        persistent_workers=args.num_workers > 0,
+    )
     train_tf, eval_tf = build_transforms(args.img_size)
-    train_loader = DataLoader(CurrencyDataset(train_df, train_tf), batch_size=args.batch_size,
-                               shuffle=True, num_workers=args.num_workers)
-    val_loader = DataLoader(CurrencyDataset(val_df, eval_tf), batch_size=args.batch_size,
-                             shuffle=False, num_workers=args.num_workers)
-    test_loader = DataLoader(CurrencyDataset(test_df, eval_tf), batch_size=args.batch_size,
-                              shuffle=False, num_workers=args.num_workers)
+    train_loader = DataLoader(CurrencyDataset(train_df, train_tf), shuffle=True, **loader_kwargs)
+    val_loader = DataLoader(CurrencyDataset(val_df, eval_tf), shuffle=False, **loader_kwargs)
+    test_loader = DataLoader(CurrencyDataset(test_df, eval_tf), shuffle=False, **loader_kwargs)
 
-    model = NoteAuthNet(num_features=len(FEATURE_NAMES)).to(device)
-    criterion = nn.BCELoss()
+    model = NoteAuthNet(num_features=len(FEATURE_NAMES), pretrained=not args.no_pretrained).to(device)
+    model = model.to(memory_format=torch.channels_last)
+    criterion = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    scaler = torch.amp.GradScaler(device.type, enabled=use_amp) if use_amp else None
 
     best_val_auc = -1.0
+    epochs_without_improvement = 0
     for epoch in range(1, args.epochs + 1):
-        train_loss, train_auc = run_epoch(model, train_loader, criterion, device, optimizer)
-        val_loss, val_auc = run_epoch(model, val_loader, criterion, device)
+        train_loss, train_auc = run_epoch(model, train_loader, criterion, device, optimizer, scaler, use_amp)
+        val_loss, val_auc = run_epoch(model, val_loader, criterion, device, use_amp=use_amp)
         print(f"Epoch {epoch}/{args.epochs} - train_loss={train_loss:.4f} train_auc={train_auc:.4f} "
               f"val_loss={val_loss:.4f} val_auc={val_auc:.4f}")
 
         if val_auc > best_val_auc:
             best_val_auc = val_auc
+            epochs_without_improvement = 0
             torch.save(model.state_dict(), MODEL_PATH)
+        else:
+            epochs_without_improvement += 1
+            if epochs_without_improvement >= args.patience:
+                print(f"Early stopping: no val AUC improvement in {args.patience} epochs")
+                break
 
     model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
-    test_loss, test_auc = run_epoch(model, test_loader, criterion, device)
+    test_loss, test_auc = run_epoch(model, test_loader, criterion, device, use_amp=use_amp)
     print(f"Test: loss={test_loss:.4f} auc={test_auc:.4f}")
 
     metrics = {

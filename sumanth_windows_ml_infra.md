@@ -436,6 +436,11 @@ if __name__ == "__main__":
 
 ## 4. ML Model Training
 
+> **Run guide:** [ml/TRAINING.md](ml/TRAINING.md) has the exact RTX 4060 commands,
+> dataset layouts, and time estimates. The training scripts use mixed precision
+> (AMP), parallel data loading, and early stopping by default; VoiceSpoofDetector
+> additionally supports `--cache-mels` for a 2-3x speedup after the first epoch.
+
 ### 4.1 Model 1 — NoteAuthNet (Counterfeit Currency Detection)
 
 **Architecture:** EfficientNet-B4 with multi-head output (one head per feature)
@@ -627,18 +632,18 @@ Available for OS:                                   ~1.5 GB
 ## 7. Task Checklist (Phase 1: Sumanth)
 
 ### 1. Infrastructure
-- [ ] Docker Compose: PostgreSQL + PostGIS + pgvector + Redis
-- [ ] All database schemas created (run Alembic migrations)
-- [ ] pgvector extension enabled
-- [ ] Seed data generated (50+ sessions, 100+ entities, 200+ incidents)
-- [ ] Seed data loaded and verified
-- [ ] `docker compose up` → all healthy on first try
+- [x] Docker Compose: PostgreSQL + PostGIS + pgvector + Redis
+- [x] All database schemas created (run Alembic migrations)
+- [x] pgvector extension enabled
+- [x] Seed data generated (50+ sessions, 100+ entities, 200+ incidents)
+- [x] Seed data loaded and verified
+- [x] `docker compose up` → all healthy on first try
 
 ### 2. ML Models Training
-- [ ] NoteAuthNet trained → `note_auth_net.pth` + `.tflite`
-- [ ] VoiceSpoofDetector trained → `voice_spoof.pth`
-- [ ] Scam classifier trained → `scam_classifier.joblib`
-- [ ] Hotspot predictor trained → `hotspot_predictor.joblib`
+- [ ] NoteAuthNet trained → `note_auth_net.pth` + `.tflite` *(run: [ml/TRAINING.md](ml/TRAINING.md) §2)*
+- [ ] VoiceSpoofDetector trained → `voice_spoof.pth` *(run: [ml/TRAINING.md](ml/TRAINING.md) §3)*
+- [x] Scam classifier trained → `scam_classifier.joblib`
+- [x] Hotspot predictor trained → `hotspot_predictor.joblib`
 
 ### 3. Agentic Orchestrator & Integration
 - [ ] All models copied to `backend/app/ml/models/`

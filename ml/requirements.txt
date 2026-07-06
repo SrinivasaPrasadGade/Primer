@@ -25,6 +25,9 @@ tensorflow>=2.17
 tf2onnx>=1.16
 onnx2tf>=1.26
 
+# Embedding pipeline (embed_corpus.py reads scam_script_corpus from Postgres)
+psycopg2-binary>=2.9
+
 # Utilities
 tqdm>=4.66
 matplotlib>=3.9
