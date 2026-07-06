@@ -31,6 +31,13 @@ enlarge the pagefile first (see Troubleshooting) and pass `--num-workers 4`.
 
 Train **one model at a time** (8 GB VRAM budget, see section 6 of the task sheet).
 
+**Run both back-to-back unattended:** `cd ml` then `.\train_all.ps1` — runs
+NoteAuthNet then VoiceSpoofDetector in sequence, stopping immediately if a
+step fails (so it won't burn time training the second model on top of a
+broken first one). Internet is only needed for the first NoteAuthNet run (to
+download ImageNet-pretrained weights, cached afterwards); safe to disconnect
+once that's done.
+
 ---
 
 ## 0. One-time setup
