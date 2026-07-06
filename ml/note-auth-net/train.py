@@ -1,0 +1,256 @@
+"""
+Trains NoteAuthNet (EfficientNet-B4, multi-head) on the currency image dataset.
+
+Input:  ml/note-auth-net/data/manifest.csv
+         (generate with ml/note-auth-net/build_manifest.py)
+Output: ml/note-auth-net/note_auth_net.pth
+         (copied to backend/app/ml/models/note_auth_net.pth)
+        ml/note-auth-net/note_auth_net.tflite
+         (copied to mobile/assets/models/note_auth_net.tflite)
+
+The raw dataset only labels each note image genuine/counterfeit — there is no
+per-feature ground truth for watermark/thread/microprint/intaglio/colour_shift.
+All 6 heads are therefore trained against the same genuine/counterfeit label
+(weak supervision). The "overall" head is the one used for the pass/fail
+decision; the other 5 heads currently learn a correlated but not independently
+verified signal, and should be replaced with real per-feature labels
+(e.g. crops from the *_Features datasets, hand-annotated) before this model is
+trusted to explain *why* a note failed rather than just whether it did.
+
+Run:
+    cd ml/note-auth-net
+    python train.py --epochs 50 --batch-size 16
+"""
+import argparse
+import json
+import os
+import shutil
+
+import albumentations as A
+import numpy as np
+import pandas as pd
+import timm
+import torch
+from albumentations.pytorch import ToTensorV2
+from PIL import Image
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+from torch import nn
+from torch.utils.data import DataLoader, Dataset
+
+RANDOM_STATE = 42
+IMG_SIZE = 380
+FEATURE_NAMES = ["watermark", "thread", "microprint", "intaglio", "colour_shift", "overall"]
+OVERALL_IDX = FEATURE_NAMES.index("overall")
+
+BASE_DIR = os.path.dirname(__file__)
+MANIFEST_PATH = os.path.join(BASE_DIR, "data", "manifest.csv")
+MODEL_PATH = os.path.join(BASE_DIR, "note_auth_net.pth")
+TFLITE_PATH = os.path.join(BASE_DIR, "note_auth_net.tflite")
+METRICS_PATH = os.path.join(BASE_DIR, "metrics.json")
+BACKEND_MODELS_DIR = os.path.join(BASE_DIR, "..", "..", "backend", "app", "ml", "models")
+MOBILE_MODELS_DIR = os.path.join(BASE_DIR, "..", "..", "mobile", "assets", "models")
+
+IMAGENET_MEAN = (0.485, 0.456, 0.406)
+IMAGENET_STD = (0.229, 0.224, 0.225)
+
+
+class NoteAuthNet(nn.Module):
+    """Multi-feature currency authentication model.
+    Input: 380x380 RGB image of currency note
+    Output: 6 feature scores (watermark, thread, microprint, intaglio, colour_shift, overall)
+    """
+    def __init__(self, num_features=6):
+        super().__init__()
+        self.backbone = timm.create_model("efficientnet_b4", pretrained=True, num_classes=0)
+        feature_dim = self.backbone.num_features  # 1792 for B4
+        self.heads = nn.ModuleList([
+            nn.Sequential(nn.Linear(feature_dim, 256), nn.ReLU(), nn.Dropout(0.3), nn.Linear(256, 1), nn.Sigmoid())
+            for _ in range(num_features)
+        ])
+
+    def forward(self, x):
+        features = self.backbone(x)
+        return torch.cat([head(features) for head in self.heads], dim=1)
+
+
+class CurrencyDataset(Dataset):
+    def __init__(self, df: pd.DataFrame, transform: A.Compose):
+        self.filepaths = df["filepath"].tolist()
+        self.labels = df["label"].astype("float32").to_numpy()
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.filepaths)
+
+    def __getitem__(self, idx):
+        image = Image.open(self.filepaths[idx]).convert("RGB")
+        image = self.transform(image=np.array(image))["image"]
+        # Weak supervision: every head shares the genuine/counterfeit label
+        # (see module docstring — no per-feature ground truth exists yet).
+        target = torch.full((len(FEATURE_NAMES),), self.labels[idx], dtype=torch.float32)
+        return image, target
+
+
+def build_transforms(img_size: int):
+    train_tf = A.Compose([
+        A.Resize(img_size, img_size),
+        A.Rotate(limit=15, p=0.5),
+        A.RandomBrightnessContrast(p=0.5),
+        A.GaussianBlur(blur_limit=(3, 5), p=0.3),
+        A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+        ToTensorV2(),
+    ])
+    eval_tf = A.Compose([
+        A.Resize(img_size, img_size),
+        A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+        ToTensorV2(),
+    ])
+    return train_tf, eval_tf
+
+
+def load_splits(limit: int = None):
+    df = pd.read_csv(MANIFEST_PATH, encoding="utf-8")
+    if limit:
+        df, _ = train_test_split(df, train_size=min(limit, len(df)), stratify=df["label"], random_state=RANDOM_STATE)
+
+    def stratify_key(frame: pd.DataFrame) -> pd.Series:
+        key = frame["denomination"].astype(str) + "_" + frame["label"].astype(str)
+        # Fall back to the coarser label-only split if any (denom, label) group is
+        # too small to stratify on (happens with small --limit smoke runs).
+        if key.value_counts().min() < 2:
+            return frame["label"].astype(str)
+        return key
+
+    train_df, temp_df = train_test_split(df, test_size=0.3, stratify=stratify_key(df), random_state=RANDOM_STATE)
+    val_df, test_df = train_test_split(temp_df, test_size=0.5, stratify=stratify_key(temp_df), random_state=RANDOM_STATE)
+    return train_df.reset_index(drop=True), val_df.reset_index(drop=True), test_df.reset_index(drop=True)
+
+
+def run_epoch(model, loader, criterion, device, optimizer=None):
+    is_train = optimizer is not None
+    model.train(is_train)
+    total_loss, all_targets, all_preds = 0.0, [], []
+
+    with torch.set_grad_enabled(is_train):
+        for images, targets in loader:
+            images, targets = images.to(device), targets.to(device)
+            outputs = model(images)
+            loss = criterion(outputs, targets)
+
+            if is_train:
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+            total_loss += loss.item() * images.size(0)
+            all_targets.append(targets[:, OVERALL_IDX].detach().cpu().numpy())
+            all_preds.append(outputs[:, OVERALL_IDX].detach().cpu().numpy())
+
+    targets_np = np.concatenate(all_targets)
+    preds_np = np.concatenate(all_preds)
+    auc = roc_auc_score(targets_np, preds_np) if len(np.unique(targets_np)) > 1 else float("nan")
+    return total_loss / len(loader.dataset), auc
+
+
+def export_tflite(model: nn.Module, img_size: int, device):
+    """Trace the trained model through ONNX -> TF SavedModel -> TFLite."""
+    import onnx2tf
+    import tempfile
+
+    model.eval().to("cpu")
+    dummy_input = torch.randn(1, 3, img_size, img_size)
+    onnx_path = os.path.join(BASE_DIR, "note_auth_net.onnx")
+    torch.onnx.export(
+        model, dummy_input, onnx_path,
+        input_names=["image"], output_names=["scores"],
+        opset_version=17, dynamo=False,
+    )
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        onnx2tf.convert(
+            input_onnx_file_path=onnx_path,
+            output_folder_path=tmp_dir,
+            output_integer_quantized_tflite=False,
+            non_verbose=True,
+        )
+        produced = [f for f in os.listdir(tmp_dir) if f.endswith(".tflite")]
+        if not produced:
+            raise RuntimeError("onnx2tf did not produce a .tflite file")
+        # Prefer the plain float32 export if multiple variants were produced.
+        chosen = next((f for f in produced if "float32" in f), produced[0])
+        shutil.copy(os.path.join(tmp_dir, chosen), TFLITE_PATH)
+
+    model.to(device)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--img-size", type=int, default=IMG_SIZE)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--limit", type=int, default=None, help="Cap dataset size (debug/smoke runs)")
+    parser.add_argument("--num-workers", type=int, default=0)
+    parser.add_argument("--skip-tflite-export", action="store_true")
+    args = parser.parse_args()
+
+    torch.manual_seed(RANDOM_STATE)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+
+    train_df, val_df, test_df = load_splits(limit=args.limit)
+    print(f"Train/val/test sizes: {len(train_df)}/{len(val_df)}/{len(test_df)}")
+
+    train_tf, eval_tf = build_transforms(args.img_size)
+    train_loader = DataLoader(CurrencyDataset(train_df, train_tf), batch_size=args.batch_size,
+                               shuffle=True, num_workers=args.num_workers)
+    val_loader = DataLoader(CurrencyDataset(val_df, eval_tf), batch_size=args.batch_size,
+                             shuffle=False, num_workers=args.num_workers)
+    test_loader = DataLoader(CurrencyDataset(test_df, eval_tf), batch_size=args.batch_size,
+                              shuffle=False, num_workers=args.num_workers)
+
+    model = NoteAuthNet(num_features=len(FEATURE_NAMES)).to(device)
+    criterion = nn.BCELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+
+    best_val_auc = -1.0
+    for epoch in range(1, args.epochs + 1):
+        train_loss, train_auc = run_epoch(model, train_loader, criterion, device, optimizer)
+        val_loss, val_auc = run_epoch(model, val_loader, criterion, device)
+        print(f"Epoch {epoch}/{args.epochs} - train_loss={train_loss:.4f} train_auc={train_auc:.4f} "
+              f"val_loss={val_loss:.4f} val_auc={val_auc:.4f}")
+
+        if val_auc > best_val_auc:
+            best_val_auc = val_auc
+            torch.save(model.state_dict(), MODEL_PATH)
+
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    test_loss, test_auc = run_epoch(model, test_loader, criterion, device)
+    print(f"Test: loss={test_loss:.4f} auc={test_auc:.4f}")
+
+    metrics = {
+        "feature_names": FEATURE_NAMES,
+        "best_val_auc": best_val_auc,
+        "test_auc": test_auc,
+        "test_loss": test_loss,
+        "train_size": len(train_df),
+        "val_size": len(val_df),
+        "test_size": len(test_df),
+    }
+    with open(METRICS_PATH, "w") as f:
+        json.dump(metrics, f, indent=2)
+
+    os.makedirs(BACKEND_MODELS_DIR, exist_ok=True)
+    shutil.copy(MODEL_PATH, os.path.join(BACKEND_MODELS_DIR, "note_auth_net.pth"))
+    print(f"Copied {MODEL_PATH} -> {BACKEND_MODELS_DIR}")
+
+    if not args.skip_tflite_export:
+        export_tflite(model, args.img_size, device)
+        os.makedirs(MOBILE_MODELS_DIR, exist_ok=True)
+        shutil.copy(TFLITE_PATH, os.path.join(MOBILE_MODELS_DIR, "note_auth_net.tflite"))
+        print(f"Copied {TFLITE_PATH} -> {MOBILE_MODELS_DIR}")
+
+
+if __name__ == "__main__":
+    main()
