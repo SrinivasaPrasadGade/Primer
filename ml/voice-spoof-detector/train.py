@@ -37,9 +37,9 @@ Performance (tuned for RTX 4060, 8GB VRAM):
     removed by z-normalization).
   - Early stopping (--patience) ends the run when dev EER stops improving.
 
-Run:
+Run (defaults are tuned for an 8GB RTX 4060 on Windows):
     cd ml/voice-spoof-detector
-    python train.py --epochs 30 --batch-size 32 --cache-mels
+    python train.py --cache-mels
 """
 import argparse
 import json
@@ -57,6 +57,13 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 RANDOM_STATE = 42
+# On Windows, DataLoader workers are spawned processes that each re-import
+# torch and reload the full CUDA DLL stack (~2-3 GB of committed memory per
+# worker). On machines with a modest pagefile that fails with
+# "OSError: [WinError 1455] The paging file is too small". Default to 0
+# workers on Windows (in-process loading — reliable, a bit slower); pass
+# --num-workers 2..4 only after enlarging the pagefile.
+DEFAULT_NUM_WORKERS = 0 if os.name == "nt" else 4
 SAMPLE_RATE = 16000
 CLIP_SECONDS = 4
 CLIP_SAMPLES = SAMPLE_RATE * CLIP_SECONDS
@@ -248,7 +255,8 @@ def main():
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--limit", type=int, default=None, help="Cap dataset size per split (debug/smoke runs)")
-    parser.add_argument("--num-workers", type=int, default=4)
+    parser.add_argument("--num-workers", type=int, default=DEFAULT_NUM_WORKERS,
+                        help="DataLoader worker processes (default 0 on Windows — see note at top)")
     parser.add_argument("--patience", type=int, default=7,
                         help="Stop early after this many epochs without dev EER improvement")
     parser.add_argument("--no-amp", action="store_true", help="Disable mixed-precision training")
@@ -306,7 +314,7 @@ def main():
                 print(f"Early stopping: no dev EER improvement in {args.patience} epochs")
                 break
 
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=device, weights_only=True))
 
     eval_df = load_manifest("eval", args.limit)
     eval_loader = DataLoader(ASVspoofDataset(eval_df, train=False), shuffle=False, **loader_kwargs)

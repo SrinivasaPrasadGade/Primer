@@ -28,9 +28,9 @@ Performance (tuned for RTX 4060, 8GB VRAM):
   - channels_last memory format speeds up EfficientNet convs under AMP.
   - Early stopping (--patience) ends the run when val AUC stops improving.
 
-Run:
+Run (defaults are tuned for an 8GB RTX 4060 on Windows — no flags needed):
     cd ml/note-auth-net
-    python train.py --epochs 50 --batch-size 16
+    python train.py
 """
 import argparse
 import json
@@ -51,6 +51,13 @@ from torch.utils.data import DataLoader, Dataset
 
 RANDOM_STATE = 42
 IMG_SIZE = 380
+# On Windows, DataLoader workers are spawned processes that each re-import
+# torch and reload the full CUDA DLL stack (~2-3 GB of committed memory per
+# worker). On machines with a modest pagefile that fails with
+# "OSError: [WinError 1455] The paging file is too small". Default to 0
+# workers on Windows (in-process loading — reliable, a bit slower); pass
+# --num-workers 2..4 only after enlarging the pagefile.
+DEFAULT_NUM_WORKERS = 0 if os.name == "nt" else 4
 # Some source images are raw high-DPI scans (tens of megapixels). Downsize
 # before the NumPy conversion below so a handful of oversized files don't
 # blow up per-worker memory while waiting for Albumentations' own Resize.
@@ -136,8 +143,8 @@ def build_transforms(img_size: int):
 
 def load_splits(limit: int = None):
     df = pd.read_csv(MANIFEST_PATH, encoding="utf-8")
-    if limit:
-        df, _ = train_test_split(df, train_size=min(limit, len(df)), stratify=df["label"], random_state=RANDOM_STATE)
+    if limit and limit < len(df):
+        df, _ = train_test_split(df, train_size=limit, stratify=df["label"], random_state=RANDOM_STATE)
 
     def stratify_key(frame: pd.DataFrame) -> pd.Series:
         key = frame["denomination"].astype(str) + "_" + frame["label"].astype(str)
@@ -221,11 +228,13 @@ def export_tflite(model: nn.Module, img_size: int, device):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--batch-size", type=int, default=8,
+                        help="8 fits an 8GB RTX 4060 on Windows; halve it on CUDA OOM")
     parser.add_argument("--img-size", type=int, default=IMG_SIZE)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--limit", type=int, default=None, help="Cap dataset size (debug/smoke runs)")
-    parser.add_argument("--num-workers", type=int, default=4)
+    parser.add_argument("--num-workers", type=int, default=DEFAULT_NUM_WORKERS,
+                        help="DataLoader worker processes (default 0 on Windows — see note at top)")
     parser.add_argument("--patience", type=int, default=10,
                         help="Stop early after this many epochs without val AUC improvement")
     parser.add_argument("--no-amp", action="store_true", help="Disable mixed-precision training")
@@ -280,7 +289,7 @@ def main():
                 print(f"Early stopping: no val AUC improvement in {args.patience} epochs")
                 break
 
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=device, weights_only=True))
     test_loss, test_auc = run_epoch(model, test_loader, criterion, device, use_amp=use_amp)
     print(f"Test: loss={test_loss:.4f} auc={test_auc:.4f}")
 
@@ -301,10 +310,21 @@ def main():
     print(f"Copied {MODEL_PATH} -> {BACKEND_MODELS_DIR}")
 
     if not args.skip_tflite_export:
-        export_tflite(model, args.img_size, device)
-        os.makedirs(MOBILE_MODELS_DIR, exist_ok=True)
-        shutil.copy(TFLITE_PATH, os.path.join(MOBILE_MODELS_DIR, "note_auth_net.tflite"))
-        print(f"Copied {TFLITE_PATH} -> {MOBILE_MODELS_DIR}")
+        # The trained .pth is already saved and copied at this point. Never let
+        # an export failure (TF loads its own multi-GB DLL stack, which can hit
+        # the same Windows pagefile limit) read as a failed training run.
+        try:
+            export_tflite(model, args.img_size, device)
+            os.makedirs(MOBILE_MODELS_DIR, exist_ok=True)
+            shutil.copy(TFLITE_PATH, os.path.join(MOBILE_MODELS_DIR, "note_auth_net.tflite"))
+            print(f"Copied {TFLITE_PATH} -> {MOBILE_MODELS_DIR}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"\nTFLite export FAILED ({type(exc).__name__}: {exc})")
+            print("Training itself succeeded — note_auth_net.pth is saved and copied to the "
+                  "backend. Re-run the export later with:\n"
+                  "    python export_tflite.py")
+
+    print("\nDone. Trained model: note_auth_net.pth (copied to backend/app/ml/models/)")
 
 
 if __name__ == "__main__":

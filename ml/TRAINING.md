@@ -10,16 +10,24 @@ Both training scripts are tuned for the RTX 4060:
 |---|---|
 | Mixed precision (AMP), on by default | ~1.7-2x faster, ~40% less VRAM |
 | `channels_last` + cuDNN autotune (NoteAuthNet) | faster EfficientNet convs |
-| 4 DataLoader workers + pinned memory (default) | GPU no longer waits on disk |
+| Pinned memory; DataLoader workers where safe | GPU no longer waits on disk |
 | `--cache-mels` (VoiceSpoofDetector) | 2-3x faster after epoch 1 (~10 GB disk) |
 | Early stopping (`--patience`) | run usually ends well before max epochs |
 
-**Expected wall-clock on the OMEN (RTX 4060):**
+**Windows note — the defaults are already Windows-safe.** Batch size defaults
+to 8 (NoteAuthNet) and `--num-workers` defaults to **0 on Windows**: every
+spawned DataLoader worker reloads the CUDA DLL stack (~2-3 GB of committed
+memory each), which overflows a small pagefile and dies with
+`WinError 1455: The paging file is too small`. Run the commands below exactly
+as written — no extra flags needed. To get workers back (~30-40% faster),
+enlarge the pagefile first (see Troubleshooting) and pass `--num-workers 4`.
 
-| Model | Old estimate | With optimizations |
-|---|---|---|
-| NoteAuthNet (≤50 epochs, batch 16) | 2-2.5 h | **~45-75 min** (early stop typically 25-35 epochs) |
-| VoiceSpoofDetector (≤30 epochs, batch 32, cached mels) | 1.5-2 h | **~30-50 min** |
+**Expected wall-clock on the OMEN (RTX 4060, safe defaults):**
+
+| Model | Estimate |
+|---|---|
+| NoteAuthNet (≤50 epochs, batch 8, 0 workers) | **~1.5-2 h** (early stop typically 25-35 epochs) |
+| VoiceSpoofDetector (≤30 epochs, batch 32, cached mels) | **~40-60 min** |
 
 Train **one model at a time** (8 GB VRAM budget, see section 6 of the task sheet).
 
@@ -64,25 +72,26 @@ data\raw\voice_spoofing\ASVspoof 2019\LA\ASVspoof2019_LA_{train,dev,eval}\flac\*
 ```powershell
 cd primer\ml\note-auth-net
 python build_manifest.py
-python train.py --epochs 50 --batch-size 16
+python train.py
 ```
 
-- If you hit `CUDA out of memory`: drop to `--batch-size 8`.
+- If you hit `CUDA out of memory`: drop to `--batch-size 4`.
 - The TFLite export at the end needs the TensorFlow/onnx2tf deps from
-  `requirements.txt` and takes ~5-10 min on CPU. To defer it, add
-  `--skip-tflite-export` and re-run the export later.
+  `requirements.txt` and takes ~5-10 min on CPU. If the export step fails,
+  **training is still saved** — re-run just the export with
+  `python export_tflite.py`.
 - Outputs are copied automatically to `backend/app/ml/models/note_auth_net.pth`
   and `mobile/assets/models/note_auth_net.tflite`.
 
 **Quick smoke test first (2 min, recommended):**
-`python train.py --epochs 1 --limit 40 --num-workers 0 --skip-tflite-export`
+`python train.py --epochs 1 --limit 40 --skip-tflite-export`
 
 ## 3. Train VoiceSpoofDetector (stage 4.2)
 
 ```powershell
 cd primer\ml\voice-spoof-detector
 python build_manifest.py
-python train.py --epochs 30 --batch-size 32 --cache-mels
+python train.py --cache-mels
 ```
 
 - `--cache-mels` writes ~10 GB of `.npy` files to `data/mel_cache/` on the
@@ -91,7 +100,7 @@ python train.py --epochs 30 --batch-size 32 --cache-mels
 - Output is copied automatically to `backend/app/ml/models/voice_spoof.pth`.
 
 **Quick smoke test first:**
-`python train.py --epochs 1 --limit 64 --num-workers 0`
+`python train.py --epochs 1 --limit 64`
 
 ## 4. Embedding pipeline + FAISS index (section 5)
 
@@ -124,7 +133,10 @@ git push
 | Symptom | Fix |
 |---|---|
 | `CUDA out of memory` | halve `--batch-size`; AMP is already on |
+| `WinError 1455: The paging file is too small` | you passed `--num-workers` > 0 (or TF import during export). Drop the flag (0 workers is the Windows default), close other apps, or enlarge the pagefile: System Properties → Advanced → Performance Settings → Advanced → Virtual memory → Change → uncheck "Automatically manage" → Custom size, Initial 16000 / Maximum 32000 MB → reboot |
+| `CUBLAS_STATUS_EXECUTION_FAILED` / cuBLAS errors | usually VRAM pressure in disguise — halve `--batch-size`; if it persists, add `--no-amp` |
 | Loss becomes `nan` | rerun with `--no-amp` (rare on Ada GPUs) |
-| DataLoader crashes on Windows | use `--num-workers 0` (slower but reliable) |
-| GPU utilization low during voice training | add `--cache-mels`, raise `--num-workers` to 6-8 |
+| `MemoryError` in a DataLoader worker | fixed in the current train.py (oversized scans are pre-shrunk); `git pull` if you still see it |
+| TFLite export fails after training | training is saved; rerun with `python export_tflite.py` |
+| GPU utilization low during voice training | add `--cache-mels`; only raise `--num-workers` after the pagefile fix above |
 | `FileNotFoundError` from build_manifest | dataset extracted to the wrong path — compare against section 1 layouts exactly |
