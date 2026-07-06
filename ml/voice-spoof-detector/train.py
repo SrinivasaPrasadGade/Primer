@@ -55,6 +55,7 @@ import torch
 from sklearn.metrics import roc_auc_score, roc_curve
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 
 RANDOM_STATE = 42
 # On Windows, DataLoader workers are spawned processes that each re-import
@@ -205,13 +206,14 @@ def compute_eer(labels: np.ndarray, scores: np.ndarray) -> float:
     return float((fpr[idx] + fnr[idx]) / 2)
 
 
-def run_epoch(model, loader, weights: dict, device, optimizer=None, scaler=None, use_amp=False):
+def run_epoch(model, loader, weights: dict, device, optimizer=None, scaler=None, use_amp=False, desc=""):
     is_train = optimizer is not None
     model.train(is_train)
-    total_loss, all_targets, all_preds = 0.0, [], []
+    total_loss, all_targets, all_preds, n_seen = 0.0, [], [], 0
 
+    pbar = tqdm(loader, desc=desc, unit="batch", leave=False)
     with torch.set_grad_enabled(is_train):
-        for images, targets in loader:
+        for images, targets in pbar:
             images = images.to(device, non_blocking=True)
             targets = targets.to(device, non_blocking=True)
 
@@ -232,8 +234,10 @@ def run_epoch(model, loader, weights: dict, device, optimizer=None, scaler=None,
                     optimizer.step()
 
             total_loss += loss.item() * images.size(0)
+            n_seen += images.size(0)
             all_targets.append(targets.detach().cpu().numpy())
             all_preds.append(torch.sigmoid(logits.detach().float()).cpu().numpy())
+            pbar.set_postfix(loss=f"{total_loss / n_seen:.4f}")
 
     targets_np = np.concatenate(all_targets)
     preds_np = np.concatenate(all_preds)
@@ -299,8 +303,10 @@ def main():
     epochs_without_improvement = 0
     for epoch in range(1, args.epochs + 1):
         train_loss, train_auc, train_eer = run_epoch(model, train_loader, weights, device,
-                                                     optimizer, scaler, use_amp)
-        dev_loss, dev_auc, dev_eer = run_epoch(model, dev_loader, weights, device, use_amp=use_amp)
+                                                     optimizer, scaler, use_amp,
+                                                     desc=f"Epoch {epoch}/{args.epochs} [train]")
+        dev_loss, dev_auc, dev_eer = run_epoch(model, dev_loader, weights, device, use_amp=use_amp,
+                                                desc=f"Epoch {epoch}/{args.epochs} [dev]")
         print(f"Epoch {epoch}/{args.epochs} - train_loss={train_loss:.4f} train_auc={train_auc:.4f} "
               f"train_eer={train_eer:.4f} dev_loss={dev_loss:.4f} dev_auc={dev_auc:.4f} dev_eer={dev_eer:.4f}")
 
@@ -318,7 +324,7 @@ def main():
 
     eval_df = load_manifest("eval", args.limit)
     eval_loader = DataLoader(ASVspoofDataset(eval_df, train=False), shuffle=False, **loader_kwargs)
-    eval_loss, eval_auc, eval_eer = run_epoch(model, eval_loader, weights, device, use_amp=use_amp)
+    eval_loss, eval_auc, eval_eer = run_epoch(model, eval_loader, weights, device, use_amp=use_amp, desc="Eval")
     print(f"Eval: loss={eval_loss:.4f} auc={eval_auc:.4f} eer={eval_eer:.4f}")
 
     metrics = {

@@ -48,6 +48,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 
 RANDOM_STATE = 42
 IMG_SIZE = 380
@@ -159,13 +160,14 @@ def load_splits(limit: int = None):
     return train_df.reset_index(drop=True), val_df.reset_index(drop=True), test_df.reset_index(drop=True)
 
 
-def run_epoch(model, loader, criterion, device, optimizer=None, scaler=None, use_amp=False):
+def run_epoch(model, loader, criterion, device, optimizer=None, scaler=None, use_amp=False, desc=""):
     is_train = optimizer is not None
     model.train(is_train)
-    total_loss, all_targets, all_preds = 0.0, [], []
+    total_loss, all_targets, all_preds, n_seen = 0.0, [], [], 0
 
+    pbar = tqdm(loader, desc=desc, unit="batch", leave=False)
     with torch.set_grad_enabled(is_train):
-        for images, targets in loader:
+        for images, targets in pbar:
             images = images.to(device, non_blocking=True).to(memory_format=torch.channels_last)
             targets = targets.to(device, non_blocking=True)
 
@@ -184,9 +186,11 @@ def run_epoch(model, loader, criterion, device, optimizer=None, scaler=None, use
                     optimizer.step()
 
             total_loss += loss.item() * images.size(0)
+            n_seen += images.size(0)
             probs = torch.sigmoid(logits[:, OVERALL_IDX].detach().float())
             all_targets.append(targets[:, OVERALL_IDX].detach().cpu().numpy())
             all_preds.append(probs.cpu().numpy())
+            pbar.set_postfix(loss=f"{total_loss / n_seen:.4f}")
 
     targets_np = np.concatenate(all_targets)
     preds_np = np.concatenate(all_preds)
@@ -274,8 +278,10 @@ def main():
     best_val_auc = -1.0
     epochs_without_improvement = 0
     for epoch in range(1, args.epochs + 1):
-        train_loss, train_auc = run_epoch(model, train_loader, criterion, device, optimizer, scaler, use_amp)
-        val_loss, val_auc = run_epoch(model, val_loader, criterion, device, use_amp=use_amp)
+        train_loss, train_auc = run_epoch(model, train_loader, criterion, device, optimizer, scaler, use_amp,
+                                           desc=f"Epoch {epoch}/{args.epochs} [train]")
+        val_loss, val_auc = run_epoch(model, val_loader, criterion, device, use_amp=use_amp,
+                                       desc=f"Epoch {epoch}/{args.epochs} [val]")
         print(f"Epoch {epoch}/{args.epochs} - train_loss={train_loss:.4f} train_auc={train_auc:.4f} "
               f"val_loss={val_loss:.4f} val_auc={val_auc:.4f}")
 
@@ -290,7 +296,7 @@ def main():
                 break
 
     model.load_state_dict(torch.load(MODEL_PATH, map_location=device, weights_only=True))
-    test_loss, test_auc = run_epoch(model, test_loader, criterion, device, use_amp=use_amp)
+    test_loss, test_auc = run_epoch(model, test_loader, criterion, device, use_amp=use_amp, desc="Test")
     print(f"Test: loss={test_loss:.4f} auc={test_auc:.4f}")
 
     metrics = {
