@@ -1,0 +1,16 @@
+{
+  "feature_names": [
+    "watermark",
+    "thread",
+    "microprint",
+    "intaglio",
+    "colour_shift",
+    "overall"
+  ],
+  "best_val_auc": 0.9999550747556067,
+  "test_auc": 0.9997487581474144,
+  "test_loss": 0.028757092394874575,
+  "train_size": 5209,
+  "val_size": 1116,
+  "test_size": 1117
+}
