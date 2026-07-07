@@ -650,7 +650,7 @@ Available for OS:                                   ~1.5 GB
 - [x] TFLite model copied to `mobile/assets/models/`
 - [x] Embedding pipeline for scam corpus
 - [x] FAISS index built for knowledge base
-- [ ] Gemini API integration helpers (shared with Srinivas)
+- [x] Gemini API integration helpers (shared with Srinivas) *(`backend/app/services/gemini_client.py`)*
 - [ ] Copilot function calling schema defined
 - [ ] Cross-module correlation logic (link scam session → graph → map)
 - [ ] Verify inference times (< 3s for note, < 2s for voice)
