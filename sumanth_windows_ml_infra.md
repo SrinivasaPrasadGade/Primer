@@ -640,16 +640,16 @@ Available for OS:                                   ~1.5 GB
 - [x] `docker compose up` → all healthy on first try
 
 ### 2. ML Models Training
-- [ ] NoteAuthNet trained → `note_auth_net.pth` + `.tflite` *(run: [ml/TRAINING.md](ml/TRAINING.md) §2)*
-- [ ] VoiceSpoofDetector trained → `voice_spoof.pth` *(run: [ml/TRAINING.md](ml/TRAINING.md) §3)*
+- [x] NoteAuthNet trained → `note_auth_net.pth` + `.tflite` *(run: [ml/TRAINING.md](ml/TRAINING.md) §2)*
+- [x] VoiceSpoofDetector trained → `voice_spoof.pth` *(run: [ml/TRAINING.md](ml/TRAINING.md) §3)*
 - [x] Scam classifier trained → `scam_classifier.joblib`
 - [x] Hotspot predictor trained → `hotspot_predictor.joblib`
 
 ### 3. Agentic Orchestrator & Integration
-- [ ] All models copied to `backend/app/ml/models/`
-- [ ] TFLite model copied to `mobile/assets/models/`
-- [ ] Embedding pipeline for scam corpus
-- [ ] FAISS index built for knowledge base
+- [x] All models copied to `backend/app/ml/models/`
+- [x] TFLite model copied to `mobile/assets/models/`
+- [x] Embedding pipeline for scam corpus
+- [x] FAISS index built for knowledge base
 - [ ] Gemini API integration helpers (shared with Srinivas)
 - [ ] Copilot function calling schema defined
 - [ ] Cross-module correlation logic (link scam session → graph → map)

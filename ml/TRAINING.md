@@ -110,8 +110,15 @@ cd primer\ml\embeddings
 python embed_corpus.py
 ```
 
-Writes `scam_corpus.faiss` + `scam_corpus_meta.json` and copies both to
-`backend/app/ml/models/`.
+Writes `scam_corpus.faiss` + `scam_corpus_meta.json`, copies both to
+`backend/app/ml/models/`, and fills the pgvector `embedding` column on
+`scam_script_corpus` so the backend can also search in SQL.
+
+Smoke-test the index with a novel scam pattern (top-5 analyst suggestions):
+
+```powershell
+python search_corpus.py "Your parcel was seized by customs, pay the fine immediately"
+```
 
 ## 5. Verify + commit
 
