@@ -653,5 +653,5 @@ Available for OS:                                   ~1.5 GB
 - [x] Gemini API integration helpers (shared with Srinivas) *(`backend/app/services/gemini_client.py`)*
 - [x] Copilot function calling schema defined
 - [x] Cross-module correlation logic (link scam session → graph → map)
-- [ ] Verify inference times (< 3s for note, < 2s for voice)
+- [x] Verify inference times (< 3s for note, < 2s for voice) *(run: `python ml/benchmark_inference.py`; note p95 413ms, voice p95 49ms on this machine)*
 - [ ] Final seed data polish (make it look realistic)
