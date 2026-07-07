@@ -652,6 +652,6 @@ Available for OS:                                   ~1.5 GB
 - [x] FAISS index built for knowledge base
 - [x] Gemini API integration helpers (shared with Srinivas) *(`backend/app/services/gemini_client.py`)*
 - [x] Copilot function calling schema defined
-- [ ] Cross-module correlation logic (link scam session → graph → map)
+- [x] Cross-module correlation logic (link scam session → graph → map)
 - [ ] Verify inference times (< 3s for note, < 2s for voice)
 - [ ] Final seed data polish (make it look realistic)

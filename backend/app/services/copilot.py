@@ -1,10 +1,12 @@
 import json
 import logging
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services import correlation as correlation_service
 from app.services.gemini_client import GeminiError, run_with_tools
 
 logger = logging.getLogger(__name__)
@@ -90,6 +92,21 @@ COPILOT_TOOLS = [
                 "phone_number": {"type": "string"},
             },
             "required": ["phone_number"],
+        },
+    },
+    {
+        "name": "correlate_scam_session",
+        "description": (
+            "Given a scam session ID, correlate it across modules: the fraud-graph "
+            "entities/cluster for its caller and callee numbers, and any geo-intel map "
+            "incidents reported from that session."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "session_id": {"type": "string", "description": "UUID of the scam_sentinel session"},
+            },
+            "required": ["session_id"],
         },
     },
 ]
@@ -232,12 +249,17 @@ async def check_number_reputation(db: AsyncSession, phone_number: str) -> dict:
     return {"found": True, **dict(row)}
 
 
+async def correlate_scam_session(db: AsyncSession, session_id: str) -> dict:
+    return await correlation_service.correlate_scam_session(db, UUID(session_id))
+
+
 TOOL_HANDLERS = {
     "search_entity": search_entity,
     "get_entity_connections": get_entity_connections,
     "search_complaints_for_entity": search_complaints_for_entity,
     "get_cluster_loss": get_cluster_loss,
     "check_number_reputation": check_number_reputation,
+    "correlate_scam_session": correlate_scam_session,
 }
 
 
