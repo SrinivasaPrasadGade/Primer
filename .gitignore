@@ -59,3 +59,7 @@ Thumbs.db
 
 # Datasets
 data/
+ml/note-auth-net/note_auth_net.pth
+ml/note-auth-net/note_auth_net.tflite
+ml/note-auth-net/note_auth_net.onnx
+ml/voice-spoof-detector/voice_spoof.pth
