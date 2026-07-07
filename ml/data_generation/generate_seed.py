@@ -231,8 +231,18 @@ def gen_scam_sessions():
         scam_phase = random.choice(SCAM_PHASES)
         duration = random.randint(180, 5400)
         # Anchor on when the call ENDED (not started) so call_start is always
-        # further in the past — a call can never end in the future.
-        hours_since_end = random.randint(1, 720)
+        # further in the past — a call can never end in the future. The end
+        # time is pinned to an IST wall-clock hour drawn from HOUR_WEIGHTS
+        # (scam calls peak 10:00–14:00 IST); days_back >= 1 keeps every
+        # call_end strictly in the past no matter when the seed is loaded.
+        days_back = random.randint(1, 30)
+        hour = random.choices(range(24), weights=HOUR_WEIGHTS)[0]
+        minute = random.randint(0, 59)
+        call_end_sql = (
+            f"(((NOW() AT TIME ZONE 'Asia/Kolkata')::date"
+            f" - interval '{days_back} days'"
+            f" + interval '{hour} hours {minute} minutes') AT TIME ZONE 'Asia/Kolkata')"
+        )
         spoofed = random.random() > 0.55
         deepfake = random.random() > 0.7
         status = random.choices(
@@ -258,14 +268,14 @@ def gen_scam_sessions():
              voice_synthetic_probability, status, acknowledged_by, acknowledged_at)
             VALUES (
              '{session_id}', '{caller}', '{callee}',
-             NOW() - interval '{hours_since_end} hours' - interval '{duration} seconds',
-             NOW() - interval '{hours_since_end} hours',
+             {call_end_sql} - interval '{duration} seconds',
+             {call_end_sql},
              {duration}, '{level}', {confidence:.1f}, '{scam_type}', '{scam_phase}',
              '{signals}'::jsonb, {str(spoofed).lower()},
              {("'" + rand_phone() + "'") if spoofed else "NULL"},
              {str(deepfake).lower()}, {random.uniform(0.3, 0.9):.2f}, '{status}',
              {YASHI if acknowledged else "NULL"},
-             {"NOW() - interval '" + str(random.randint(0, hours_since_end)) + " hours'" if acknowledged else "NULL"}
+             {"NOW() - interval '" + str(random.randint(0, (days_back - 1) * 24)) + " hours'" if acknowledged else "NULL"}
             );""")
 
         if level == "RED" and len(linked_sessions) < LINKED_SESSION_COUNT:
