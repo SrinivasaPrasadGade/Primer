@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 import google.generativeai as genai
 from google.api_core.exceptions import GoogleAPICallError, ResourceExhausted
@@ -147,3 +147,56 @@ def extract_function_calls(response) -> list[dict]:
             if function_call and function_call.name:
                 calls.append({"name": function_call.name, "args": dict(function_call.args)})
     return calls
+
+
+async def run_with_tools(
+    prompt: str,
+    tools: list[dict],
+    execute_tool: Callable[[str, dict], Awaitable[Any]],
+    *,
+    system_instruction: str | None = None,
+    temperature: float = DEFAULT_TEMPERATURE,
+    model_name: str = DEFAULT_MODEL,
+    max_rounds: int = 4,
+) -> dict:
+    """Drive a Gemini function-calling loop to completion.
+
+    Sends `prompt` to a chat session; whenever Gemini requests a function call,
+    awaits `execute_tool(name, args)` and feeds the result back as a function
+    response, repeating until Gemini returns a plain text answer or `max_rounds`
+    is exhausted.
+
+    Returns {"answer": str, "tool_calls": [{"name", "args", "result"}, ...]}.
+    """
+    model = _build_model(system_instruction, tools, model_name)
+    generation_config = genai.types.GenerationConfig(temperature=temperature)
+    chat = model.start_chat()
+    tool_calls: list[dict] = []
+
+    message: Any = prompt
+    for _ in range(max_rounds):
+        response = await _call_with_retries(
+            lambda message=message: chat.send_message(message, generation_config=generation_config)
+        )
+        calls = extract_function_calls(response)
+        if not calls:
+            return {"answer": response.text, "tool_calls": tool_calls}
+
+        response_parts = []
+        for call in calls:
+            result = await execute_tool(call["name"], call["args"])
+            tool_calls.append({"name": call["name"], "args": call["args"], "result": result})
+            response_parts.append(
+                genai.protos.Part(
+                    function_response=genai.protos.FunctionResponse(
+                        name=call["name"],
+                        response={"result": result},
+                    )
+                )
+            )
+        message = response_parts
+
+    return {
+        "answer": "I gathered some data but couldn't finish forming an answer in time.",
+        "tool_calls": tool_calls,
+    }
