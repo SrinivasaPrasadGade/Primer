@@ -3,354 +3,354 @@
   "dim": 384,
   "rows": [
     {
-      "id": "0239d0f9-4710-4ea6-b6ee-68ebb20ad3d4",
+      "id": "29b25fe7-6c87-470c-bf62-f77d970bb212",
+      "language": "en",
+      "scam_type": "customs_seizure",
+      "title": "Customs Parcel Seizure Scam",
+      "content": "This is customs department Mumbai airport. This is Officer Iyer. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
+    },
+    {
+      "id": "0830443f-cd4a-4847-9c99-952fc06165f1",
+      "language": "en",
+      "scam_type": "tax_evasion",
+      "title": "Income Tax Department Threat Call",
+      "content": "This call is from the Income Tax Department, Investigation Wing. I am Officer Gupta. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
+    },
+    {
+      "id": "02185c0f-e8b6-4188-92c4-2f717dcf282f",
+      "language": "en",
+      "scam_type": "bank_kyc",
+      "title": "Bank KYC Expiry Fraud",
+      "content": "Dear customer, this is Reddy from the bank's verification team. Your bank account KYC will be blocked within 2 hours. Share the OTP sent to your phone immediately to keep your account active and avoid permanent suspension."
+    },
+    {
+      "id": "221d77af-f87f-4171-8d6c-c6a45acb0380",
+      "language": "hi",
+      "scam_type": "customs_seizure",
+      "title": "सीमा शुल्क पार्सल जब्ती घोटाला",
+      "content": "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। मैं अधिकारी Rao बोल रहा हूं। आपके नाम से बुक पार्सल जब्त हुआ है जिसमें प्रतिबंधित सामान है। एफआईआर से बचने के लिए अभी जुर्माना भरें।"
+    },
+    {
+      "id": "52854a66-709b-4c6f-9f2c-d874fabade8f",
+      "language": "en",
+      "scam_type": "cbi_impersonation",
+      "title": "CBI Impersonation — FIR Threat",
+      "content": "We are calling from CBI Delhi headquarters. This is Inspector Reddy. An FIR has been registered against your name in a money laundering case. To avoid immediate arrest, you must verify your bank account on this call."
+    },
+    {
+      "id": "a7187d74-d771-4172-9730-603a6fee134c",
+      "language": "hi",
+      "scam_type": "digital_arrest",
+      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
+      "content": "मैं सीबीआई मुंबई से अधिकारी Iyer बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
+    },
+    {
+      "id": "bc0407e2-f147-40fa-9e83-863b7b726fef",
+      "language": "hi",
+      "scam_type": "bank_kyc",
+      "title": "बैंक केवाईसी समाप्ति धोखाधड़ी",
+      "content": "प्रिय ग्राहक, मैं बैंक सत्यापन टीम से Gupta बोल रहा हूं। आपके बैंक खाते का केवाईसी 2 घंटे में ब्लॉक हो जाएगा। खाता सक्रिय रखने के लिए तुरंत अपने फोन पर आया ओटीपी साझा करें।"
+    },
+    {
+      "id": "4735a303-dd39-4abe-aed7-16c18c21cbff",
+      "language": "hi",
+      "scam_type": "customs_seizure",
+      "title": "सीमा शुल्क पार्सल जब्ती घोटाला",
+      "content": "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। मैं अधिकारी Gupta बोल रहा हूं। आपके नाम से बुक पार्सल जब्त हुआ है जिसमें प्रतिबंधित सामान है। एफआईआर से बचने के लिए अभी जुर्माना भरें।"
+    },
+    {
+      "id": "633ce0b1-90e6-40b5-9603-5be03095683c",
       "language": "en",
       "scam_type": "digital_arrest",
       "title": "Fake CBI Digital Arrest — Parcel Warning",
       "content": "This is Officer Iyer from CBI Mumbai. Your Aadhaar-linked parcel containing illegal substances has been intercepted at customs. You are under digital arrest. Do not disconnect this call or contact anyone, or a warrant will be issued for your arrest."
     },
     {
-      "id": "0bdbda9f-2501-4b65-b6b8-cd428fcff06e",
+      "id": "eaae4ea2-dca1-4d27-80de-3226693b0cf7",
       "language": "en",
-      "scam_type": "tax_evasion",
-      "title": "Income Tax Department Threat Call",
-      "content": "This call is from the Income Tax Department, Investigation Wing. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
+      "scam_type": "digital_arrest",
+      "title": "Fake CBI Digital Arrest — Parcel Warning",
+      "content": "This is Officer Verma from CBI Mumbai. Your Aadhaar-linked parcel containing illegal substances has been intercepted at customs. You are under digital arrest. Do not disconnect this call or contact anyone, or a warrant will be issued for your arrest."
     },
     {
-      "id": "0c50970c-1d23-49c5-959e-b5ba467eb733",
-      "language": "en",
-      "scam_type": "tax_evasion",
-      "title": "Income Tax Department Threat Call",
-      "content": "This call is from the Income Tax Department, Investigation Wing. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
-    },
-    {
-      "id": "0c8881ff-1a52-4596-8269-2ff9c0c5b322",
+      "id": "f7907723-bf3f-47c5-8a51-64511dc6552b",
       "language": "hi",
-      "scam_type": "cbi_impersonation",
-      "title": "सीबीआई फर्जी कॉल — एफआईआर की धमकी",
-      "content": "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। आपके नाम पर मनी लॉन्ड्रिंग केस में एफआईआर दर्ज हुई है। गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।"
+      "scam_type": "bank_kyc",
+      "title": "बैंक केवाईसी समाप्ति धोखाधड़ी",
+      "content": "प्रिय ग्राहक, मैं बैंक सत्यापन टीम से Reddy बोल रहा हूं। आपके बैंक खाते का केवाईसी 2 घंटे में ब्लॉक हो जाएगा। खाता सक्रिय रखने के लिए तुरंत अपने फोन पर आया ओटीपी साझा करें।"
     },
     {
-      "id": "104b4c10-156e-4443-ba7b-221d45482092",
+      "id": "12461200-8061-42a5-a3c3-bfa0d12f4493",
       "language": "en",
       "scam_type": "cbi_impersonation",
       "title": "CBI Impersonation — FIR Threat",
-      "content": "We are calling from CBI Delhi headquarters. An FIR has been registered against your name in a money laundering case. To avoid immediate arrest, you must verify your bank account on this call."
+      "content": "We are calling from CBI Delhi headquarters. This is Inspector Verma. An FIR has been registered against your name in a money laundering case. To avoid immediate arrest, you must verify your bank account on this call."
     },
     {
-      "id": "1b395cc6-3dd8-478c-ae9e-5fff40755af4",
+      "id": "b1e783ad-8835-41fc-a30a-534361b220bc",
       "language": "en",
       "scam_type": "tax_evasion",
       "title": "Income Tax Department Threat Call",
-      "content": "This call is from the Income Tax Department, Investigation Wing. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
+      "content": "This call is from the Income Tax Department, Investigation Wing. I am Officer Khan. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
     },
     {
-      "id": "1b3d06fa-7db6-4de6-a39e-0ee0293b0a7e",
+      "id": "9b5cff3c-c072-40bb-b89e-953fac1b4043",
+      "language": "en",
+      "scam_type": "digital_arrest",
+      "title": "Fake CBI Digital Arrest — Parcel Warning",
+      "content": "This is Officer Sharma from CBI Mumbai. Your Aadhaar-linked parcel containing illegal substances has been intercepted at customs. You are under digital arrest. Do not disconnect this call or contact anyone, or a warrant will be issued for your arrest."
+    },
+    {
+      "id": "44744675-4920-4475-a26f-a6b8dbd11982",
+      "language": "hi",
+      "scam_type": "digital_arrest",
+      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
+      "content": "मैं सीबीआई मुंबई से अधिकारी Sharma बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
+    },
+    {
+      "id": "fcd876ca-f557-49c3-8d96-91bf24647c7d",
+      "language": "en",
+      "scam_type": "customs_seizure",
+      "title": "Customs Parcel Seizure Scam",
+      "content": "This is customs department Mumbai airport. This is Officer Khan. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
+    },
+    {
+      "id": "1ed0eaf7-1071-491f-955a-f656ae746164",
+      "language": "en",
+      "scam_type": "cbi_impersonation",
+      "title": "CBI Impersonation — FIR Threat",
+      "content": "We are calling from CBI Delhi headquarters. This is Inspector Khan. An FIR has been registered against your name in a money laundering case. To avoid immediate arrest, you must verify your bank account on this call."
+    },
+    {
+      "id": "db0495e5-ddfa-4d15-bbcf-314be86b0b68",
+      "language": "en",
+      "scam_type": "bank_kyc",
+      "title": "Bank KYC Expiry Fraud",
+      "content": "Dear customer, this is Sharma from the bank's verification team. Your bank account KYC will be blocked within 2 hours. Share the OTP sent to your phone immediately to keep your account active and avoid permanent suspension."
+    },
+    {
+      "id": "d552e95d-0d35-4e24-b106-b35e13251964",
+      "language": "hi",
+      "scam_type": "digital_arrest",
+      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
+      "content": "मैं सीबीआई मुंबई से अधिकारी Gupta बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
+    },
+    {
+      "id": "739523cc-c933-46c1-a502-6256e46381a1",
+      "language": "hi",
+      "scam_type": "cbi_impersonation",
+      "title": "सीबीआई फर्जी कॉल — एफआईआर की धमकी",
+      "content": "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। मैं इंस्पेक्टर Iyer बोल रहा हूं। आपके नाम पर मनी लॉन्ड्रिंग केस में एफआईआर दर्ज हुई है। गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।"
+    },
+    {
+      "id": "28675d64-1b1b-4057-88ec-5631074716a3",
+      "language": "en",
+      "scam_type": "customs_seizure",
+      "title": "Customs Parcel Seizure Scam",
+      "content": "This is customs department Mumbai airport. This is Officer Reddy. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
+    },
+    {
+      "id": "95acbdc9-d757-4c33-b0c8-f73d75b8af6a",
+      "language": "en",
+      "scam_type": "customs_seizure",
+      "title": "Customs Parcel Seizure Scam",
+      "content": "This is customs department Mumbai airport. This is Officer Rao. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
+    },
+    {
+      "id": "010c9476-abba-42f4-9084-131b38be2bfc",
+      "language": "en",
+      "scam_type": "tax_evasion",
+      "title": "Income Tax Department Threat Call",
+      "content": "This call is from the Income Tax Department, Investigation Wing. I am Officer Sharma. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
+    },
+    {
+      "id": "7aecbb52-1e3c-49bb-a483-f8c6cd220f9e",
+      "language": "hi",
+      "scam_type": "cbi_impersonation",
+      "title": "सीबीआई फर्जी कॉल — एफआईआर की धमकी",
+      "content": "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। मैं इंस्पेक्टर Sharma बोल रहा हूं। आपके नाम पर मनी लॉन्ड्रिंग केस में एफआईआर दर्ज हुई है। गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।"
+    },
+    {
+      "id": "13b0c861-855e-4a92-a47c-ce9e17c4d5a9",
+      "language": "en",
+      "scam_type": "customs_seizure",
+      "title": "Customs Parcel Seizure Scam",
+      "content": "This is customs department Mumbai airport. This is Officer Sharma. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
+    },
+    {
+      "id": "96ed9124-1d18-4b1d-8f41-679025527895",
+      "language": "hi",
+      "scam_type": "digital_arrest",
+      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
+      "content": "मैं सीबीआई मुंबई से अधिकारी Reddy बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
+    },
+    {
+      "id": "8ac59297-6420-404b-8611-565b1e926711",
+      "language": "hi",
+      "scam_type": "cbi_impersonation",
+      "title": "सीबीआई फर्जी कॉल — एफआईआर की धमकी",
+      "content": "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। मैं इंस्पेक्टर Verma बोल रहा हूं। आपके नाम पर मनी लॉन्ड्रिंग केस में एफआईआर दर्ज हुई है। गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।"
+    },
+    {
+      "id": "1b3ea928-80b6-4c64-a214-68beb138b2bb",
+      "language": "en",
+      "scam_type": "cbi_impersonation",
+      "title": "CBI Impersonation — FIR Threat",
+      "content": "We are calling from CBI Delhi headquarters. This is Inspector Sharma. An FIR has been registered against your name in a money laundering case. To avoid immediate arrest, you must verify your bank account on this call."
+    },
+    {
+      "id": "3c48527e-ec4f-40cd-99db-11d7c9739663",
+      "language": "en",
+      "scam_type": "tax_evasion",
+      "title": "Income Tax Department Threat Call",
+      "content": "This call is from the Income Tax Department, Investigation Wing. I am Officer Iyer. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
+    },
+    {
+      "id": "0883f337-6f1c-4670-91e5-e2d942f484f2",
+      "language": "en",
+      "scam_type": "digital_arrest",
+      "title": "Fake CBI Digital Arrest — Parcel Warning",
+      "content": "This is Officer Khan from CBI Mumbai. Your Aadhaar-linked parcel containing illegal substances has been intercepted at customs. You are under digital arrest. Do not disconnect this call or contact anyone, or a warrant will be issued for your arrest."
+    },
+    {
+      "id": "ee811794-1c6c-40e9-92dd-35795729a3cc",
+      "language": "en",
+      "scam_type": "digital_arrest",
+      "title": "Fake CBI Digital Arrest — Parcel Warning",
+      "content": "This is Officer Reddy from CBI Mumbai. Your Aadhaar-linked parcel containing illegal substances has been intercepted at customs. You are under digital arrest. Do not disconnect this call or contact anyone, or a warrant will be issued for your arrest."
+    },
+    {
+      "id": "0c439f60-c6ec-438b-9412-9c1315d78a08",
+      "language": "en",
+      "scam_type": "bank_kyc",
+      "title": "Bank KYC Expiry Fraud",
+      "content": "Dear customer, this is Iyer from the bank's verification team. Your bank account KYC will be blocked within 2 hours. Share the OTP sent to your phone immediately to keep your account active and avoid permanent suspension."
+    },
+    {
+      "id": "af02655f-2eb6-4d6f-ad10-f71f3b699710",
+      "language": "hi",
+      "scam_type": "cbi_impersonation",
+      "title": "सीबीआई फर्जी कॉल — एफआईआर की धमकी",
+      "content": "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। मैं इंस्पेक्टर Reddy बोल रहा हूं। आपके नाम पर मनी लॉन्ड्रिंग केस में एफआईआर दर्ज हुई है। गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।"
+    },
+    {
+      "id": "d13ec2d2-b759-4a1f-ad3a-6a33248c9407",
+      "language": "en",
+      "scam_type": "bank_kyc",
+      "title": "Bank KYC Expiry Fraud",
+      "content": "Dear customer, this is Khan from the bank's verification team. Your bank account KYC will be blocked within 2 hours. Share the OTP sent to your phone immediately to keep your account active and avoid permanent suspension."
+    },
+    {
+      "id": "73a613cb-df9b-494d-904d-7e2edb80512e",
+      "language": "en",
+      "scam_type": "customs_seizure",
+      "title": "Customs Parcel Seizure Scam",
+      "content": "This is customs department Mumbai airport. This is Officer Gupta. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
+    },
+    {
+      "id": "e2e58d9d-731c-4ce5-a06d-2d97ed5ea833",
+      "language": "en",
+      "scam_type": "customs_seizure",
+      "title": "Customs Parcel Seizure Scam",
+      "content": "This is customs department Mumbai airport. This is Officer Verma. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
+    },
+    {
+      "id": "b6450c81-8997-4e30-afa7-b3fcb55254da",
+      "language": "en",
+      "scam_type": "bank_kyc",
+      "title": "Bank KYC Expiry Fraud",
+      "content": "Dear customer, this is Gupta from the bank's verification team. Your bank account KYC will be blocked within 2 hours. Share the OTP sent to your phone immediately to keep your account active and avoid permanent suspension."
+    },
+    {
+      "id": "4855b61c-6228-49ef-af59-2e24f4095002",
+      "language": "en",
+      "scam_type": "digital_arrest",
+      "title": "Fake CBI Digital Arrest — Parcel Warning",
+      "content": "This is Officer Rao from CBI Mumbai. Your Aadhaar-linked parcel containing illegal substances has been intercepted at customs. You are under digital arrest. Do not disconnect this call or contact anyone, or a warrant will be issued for your arrest."
+    },
+    {
+      "id": "f0e630b3-66c4-4245-956e-bb224bdffb08",
+      "language": "hi",
+      "scam_type": "customs_seizure",
+      "title": "सीमा शुल्क पार्सल जब्ती घोटाला",
+      "content": "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। मैं अधिकारी Khan बोल रहा हूं। आपके नाम से बुक पार्सल जब्त हुआ है जिसमें प्रतिबंधित सामान है। एफआईआर से बचने के लिए अभी जुर्माना भरें।"
+    },
+    {
+      "id": "22d4a6db-bacf-4c5d-babd-4a33189bd110",
+      "language": "en",
+      "scam_type": "bank_kyc",
+      "title": "Bank KYC Expiry Fraud",
+      "content": "Dear customer, this is Rao from the bank's verification team. Your bank account KYC will be blocked within 2 hours. Share the OTP sent to your phone immediately to keep your account active and avoid permanent suspension."
+    },
+    {
+      "id": "f878b467-0a89-407f-b6d5-b7c95812de24",
+      "language": "en",
+      "scam_type": "tax_evasion",
+      "title": "Income Tax Department Threat Call",
+      "content": "This call is from the Income Tax Department, Investigation Wing. I am Officer Reddy. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
+    },
+    {
+      "id": "2868b2d2-6163-41a3-8476-714138a1803a",
+      "language": "hi",
+      "scam_type": "customs_seizure",
+      "title": "सीमा शुल्क पार्सल जब्ती घोटाला",
+      "content": "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। मैं अधिकारी Sharma बोल रहा हूं। आपके नाम से बुक पार्सल जब्त हुआ है जिसमें प्रतिबंधित सामान है। एफआईआर से बचने के लिए अभी जुर्माना भरें।"
+    },
+    {
+      "id": "b4f3daf2-14db-4724-8227-716db0a51cde",
+      "language": "hi",
+      "scam_type": "cbi_impersonation",
+      "title": "सीबीआई फर्जी कॉल — एफआईआर की धमकी",
+      "content": "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। मैं इंस्पेक्टर Rao बोल रहा हूं। आपके नाम पर मनी लॉन्ड्रिंग केस में एफआईआर दर्ज हुई है। गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।"
+    },
+    {
+      "id": "36002ceb-13e0-4d50-9a9b-34f67475aef9",
+      "language": "en",
+      "scam_type": "tax_evasion",
+      "title": "Income Tax Department Threat Call",
+      "content": "This call is from the Income Tax Department, Investigation Wing. I am Officer Rao. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
+    },
+    {
+      "id": "a8bb35a6-74b2-4ffc-9ed8-77efa43c2b64",
+      "language": "hi",
+      "scam_type": "bank_kyc",
+      "title": "बैंक केवाईसी समाप्ति धोखाधड़ी",
+      "content": "प्रिय ग्राहक, मैं बैंक सत्यापन टीम से Iyer बोल रहा हूं। आपके बैंक खाते का केवाईसी 2 घंटे में ब्लॉक हो जाएगा। खाता सक्रिय रखने के लिए तुरंत अपने फोन पर आया ओटीपी साझा करें।"
+    },
+    {
+      "id": "57748483-46fd-4a7e-9a1f-0164aef06700",
+      "language": "hi",
+      "scam_type": "digital_arrest",
+      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
+      "content": "मैं सीबीआई मुंबई से अधिकारी Rao बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
+    },
+    {
+      "id": "f677c7e7-f814-44b8-811c-1127d94afa93",
+      "language": "en",
+      "scam_type": "bank_kyc",
+      "title": "Bank KYC Expiry Fraud",
+      "content": "Dear customer, this is Verma from the bank's verification team. Your bank account KYC will be blocked within 2 hours. Share the OTP sent to your phone immediately to keep your account active and avoid permanent suspension."
+    },
+    {
+      "id": "bce302de-fe27-4b01-94b5-b6d744b3ae4a",
       "language": "hi",
       "scam_type": "digital_arrest",
       "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
       "content": "मैं सीबीआई मुंबई से अधिकारी Verma बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
     },
     {
-      "id": "1debf411-9453-49c2-8a50-50baabd2de6d",
-      "language": "hi",
-      "scam_type": "digital_arrest",
-      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
-      "content": "मैं सीबीआई मुंबई से अधिकारी Iyer बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
-    },
-    {
-      "id": "24d11e57-f57e-4abe-b41c-de543cd0122f",
-      "language": "hi",
-      "scam_type": "digital_arrest",
-      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
-      "content": "मैं सीबीआई मुंबई से अधिकारी Sharma बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
-    },
-    {
-      "id": "25758340-7382-4988-bcf4-3f403b7df3b8",
+      "id": "894221eb-c9a0-4ea7-849b-27f28f31dc15",
       "language": "hi",
       "scam_type": "customs_seizure",
       "title": "सीमा शुल्क पार्सल जब्ती घोटाला",
-      "content": "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। आपके नाम से बुक पार्सल जब्त हुआ है जिसमें प्रतिबंधित सामान है। एफआईआर से बचने के लिए अभी जुर्माना भरें।"
+      "content": "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। मैं अधिकारी Iyer बोल रहा हूं। आपके नाम से बुक पार्सल जब्त हुआ है जिसमें प्रतिबंधित सामान है। एफआईआर से बचने के लिए अभी जुर्माना भरें।"
     },
     {
-      "id": "25a9a00a-8958-40d7-9bbd-7be0e71d459e",
-      "language": "en",
-      "scam_type": "digital_arrest",
-      "title": "Fake CBI Digital Arrest — Parcel Warning",
-      "content": "This is Officer Reddy from CBI Mumbai. Your Aadhaar-linked parcel containing illegal substances has been intercepted at customs. You are under digital arrest. Do not disconnect this call or contact anyone, or a warrant will be issued for your arrest."
-    },
-    {
-      "id": "2cc91e51-c293-48e4-8e20-08d737f0a1f8",
-      "language": "en",
-      "scam_type": "customs_seizure",
-      "title": "Customs Parcel Seizure Scam",
-      "content": "This is customs department Mumbai airport. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
-    },
-    {
-      "id": "2e1942e5-c4ff-4742-b353-8df4a5bb1e10",
-      "language": "hi",
-      "scam_type": "customs_seizure",
-      "title": "सीमा शुल्क पार्सल जब्ती घोटाला",
-      "content": "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। आपके नाम से बुक पार्सल जब्त हुआ है जिसमें प्रतिबंधित सामान है। एफआईआर से बचने के लिए अभी जुर्माना भरें।"
-    },
-    {
-      "id": "331b5220-526d-4097-92d3-074e8575a45d",
-      "language": "en",
-      "scam_type": "bank_kyc",
-      "title": "Bank KYC Expiry Fraud",
-      "content": "Dear customer, your bank account KYC will be blocked within 2 hours. Share the OTP sent to your phone immediately to keep your account active and avoid permanent suspension."
-    },
-    {
-      "id": "354e3748-64ae-4d3b-93ce-cc99e683b8c5",
-      "language": "en",
-      "scam_type": "bank_kyc",
-      "title": "Bank KYC Expiry Fraud",
-      "content": "Dear customer, your bank account KYC will be blocked within 2 hours. Share the OTP sent to your phone immediately to keep your account active and avoid permanent suspension."
-    },
-    {
-      "id": "3b14930b-21c7-4878-85a0-5b3800853e88",
-      "language": "en",
-      "scam_type": "digital_arrest",
-      "title": "Fake CBI Digital Arrest — Parcel Warning",
-      "content": "This is Officer Reddy from CBI Mumbai. Your Aadhaar-linked parcel containing illegal substances has been intercepted at customs. You are under digital arrest. Do not disconnect this call or contact anyone, or a warrant will be issued for your arrest."
-    },
-    {
-      "id": "4312bb17-1f68-4be4-b3ba-694b845be6f0",
-      "language": "en",
-      "scam_type": "customs_seizure",
-      "title": "Customs Parcel Seizure Scam",
-      "content": "This is customs department Mumbai airport. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
-    },
-    {
-      "id": "48185391-af61-458b-9ee0-8d4412a5b73f",
-      "language": "hi",
-      "scam_type": "bank_kyc",
-      "title": "बैंक केवाईसी समाप्ति धोखाधड़ी",
-      "content": "प्रिय ग्राहक, आपके बैंक खाते का केवाईसी 2 घंटे में ब्लॉक हो जाएगा। खाता सक्रिय रखने के लिए तुरंत अपने फोन पर आया ओटीपी साझा करें।"
-    },
-    {
-      "id": "49b60639-4388-4238-ace5-d2dba5ce7e12",
-      "language": "hi",
-      "scam_type": "bank_kyc",
-      "title": "बैंक केवाईसी समाप्ति धोखाधड़ी",
-      "content": "प्रिय ग्राहक, आपके बैंक खाते का केवाईसी 2 घंटे में ब्लॉक हो जाएगा। खाता सक्रिय रखने के लिए तुरंत अपने फोन पर आया ओटीपी साझा करें।"
-    },
-    {
-      "id": "5b43f523-ecdf-4398-b816-19faafa3d1f4",
-      "language": "en",
-      "scam_type": "customs_seizure",
-      "title": "Customs Parcel Seizure Scam",
-      "content": "This is customs department Mumbai airport. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
-    },
-    {
-      "id": "704f9737-f16e-4f8d-93b0-73de8f19a11e",
-      "language": "en",
-      "scam_type": "digital_arrest",
-      "title": "Fake CBI Digital Arrest — Parcel Warning",
-      "content": "This is Officer Reddy from CBI Mumbai. Your Aadhaar-linked parcel containing illegal substances has been intercepted at customs. You are under digital arrest. Do not disconnect this call or contact anyone, or a warrant will be issued for your arrest."
-    },
-    {
-      "id": "74997be2-850d-4393-b36f-f4a15fc75577",
-      "language": "hi",
-      "scam_type": "bank_kyc",
-      "title": "बैंक केवाईसी समाप्ति धोखाधड़ी",
-      "content": "प्रिय ग्राहक, आपके बैंक खाते का केवाईसी 2 घंटे में ब्लॉक हो जाएगा। खाता सक्रिय रखने के लिए तुरंत अपने फोन पर आया ओटीपी साझा करें।"
-    },
-    {
-      "id": "817f85a3-a4ea-4acf-89f3-b81f1815760c",
-      "language": "hi",
-      "scam_type": "digital_arrest",
-      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
-      "content": "मैं सीबीआई मुंबई से अधिकारी Iyer बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
-    },
-    {
-      "id": "82307263-7c30-432d-920a-4c07e514901f",
-      "language": "hi",
-      "scam_type": "bank_kyc",
-      "title": "बैंक केवाईसी समाप्ति धोखाधड़ी",
-      "content": "प्रिय ग्राहक, आपके बैंक खाते का केवाईसी 2 घंटे में ब्लॉक हो जाएगा। खाता सक्रिय रखने के लिए तुरंत अपने फोन पर आया ओटीपी साझा करें।"
-    },
-    {
-      "id": "82437b21-75cd-4a5a-8441-3e1c10fd9b14",
-      "language": "hi",
-      "scam_type": "customs_seizure",
-      "title": "सीमा शुल्क पार्सल जब्ती घोटाला",
-      "content": "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। आपके नाम से बुक पार्सल जब्त हुआ है जिसमें प्रतिबंधित सामान है। एफआईआर से बचने के लिए अभी जुर्माना भरें।"
-    },
-    {
-      "id": "8f5ced56-dc9b-41b4-9e8d-6e638e815bb3",
+      "id": "fa432181-9abb-465c-98ae-a08052058abc",
       "language": "en",
       "scam_type": "cbi_impersonation",
       "title": "CBI Impersonation — FIR Threat",
-      "content": "We are calling from CBI Delhi headquarters. An FIR has been registered against your name in a money laundering case. To avoid immediate arrest, you must verify your bank account on this call."
-    },
-    {
-      "id": "979cc947-7aac-4e68-9076-009285aaa33e",
-      "language": "hi",
-      "scam_type": "cbi_impersonation",
-      "title": "सीबीआई फर्जी कॉल — एफआईआर की धमकी",
-      "content": "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। आपके नाम पर मनी लॉन्ड्रिंग केस में एफआईआर दर्ज हुई है। गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।"
-    },
-    {
-      "id": "9a8d4ada-07b7-40f1-b773-c51046a5ba64",
-      "language": "en",
-      "scam_type": "cbi_impersonation",
-      "title": "CBI Impersonation — FIR Threat",
-      "content": "We are calling from CBI Delhi headquarters. An FIR has been registered against your name in a money laundering case. To avoid immediate arrest, you must verify your bank account on this call."
-    },
-    {
-      "id": "9c8a8505-a779-4c51-99c0-ad03ff588a27",
-      "language": "hi",
-      "scam_type": "digital_arrest",
-      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
-      "content": "मैं सीबीआई मुंबई से अधिकारी Iyer बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
-    },
-    {
-      "id": "a152ed42-a647-446c-969f-6aa81c7991bd",
-      "language": "en",
-      "scam_type": "digital_arrest",
-      "title": "Fake CBI Digital Arrest — Parcel Warning",
-      "content": "This is Officer Reddy from CBI Mumbai. Your Aadhaar-linked parcel containing illegal substances has been intercepted at customs. You are under digital arrest. Do not disconnect this call or contact anyone, or a warrant will be issued for your arrest."
-    },
-    {
-      "id": "a59cdf71-4ced-498c-84dd-c6af987d6f87",
-      "language": "en",
-      "scam_type": "cbi_impersonation",
-      "title": "CBI Impersonation — FIR Threat",
-      "content": "We are calling from CBI Delhi headquarters. An FIR has been registered against your name in a money laundering case. To avoid immediate arrest, you must verify your bank account on this call."
-    },
-    {
-      "id": "a5fe5c30-710e-4c58-a75e-4e18a1a8c8b2",
-      "language": "en",
-      "scam_type": "digital_arrest",
-      "title": "Fake CBI Digital Arrest — Parcel Warning",
-      "content": "This is Officer Gupta from CBI Mumbai. Your Aadhaar-linked parcel containing illegal substances has been intercepted at customs. You are under digital arrest. Do not disconnect this call or contact anyone, or a warrant will be issued for your arrest."
-    },
-    {
-      "id": "a614910b-4842-46c6-80f8-ba1574d9a5b4",
-      "language": "en",
-      "scam_type": "tax_evasion",
-      "title": "Income Tax Department Threat Call",
-      "content": "This call is from the Income Tax Department, Investigation Wing. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
-    },
-    {
-      "id": "a9a7dab8-2e0c-49f5-ab4f-42892fc8bc56",
-      "language": "en",
-      "scam_type": "tax_evasion",
-      "title": "Income Tax Department Threat Call",
-      "content": "This call is from the Income Tax Department, Investigation Wing. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
-    },
-    {
-      "id": "aa548ba0-56f2-4db6-8bde-a94997ac14a7",
-      "language": "hi",
-      "scam_type": "cbi_impersonation",
-      "title": "सीबीआई फर्जी कॉल — एफआईआर की धमकी",
-      "content": "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। आपके नाम पर मनी लॉन्ड्रिंग केस में एफआईआर दर्ज हुई है। गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।"
-    },
-    {
-      "id": "ab192f41-11b8-467f-ac71-e46db57072cf",
-      "language": "hi",
-      "scam_type": "digital_arrest",
-      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
-      "content": "मैं सीबीआई मुंबई से अधिकारी Sharma बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
-    },
-    {
-      "id": "aced7bf2-1bbf-4c0c-856d-def0b34737bb",
-      "language": "en",
-      "scam_type": "cbi_impersonation",
-      "title": "CBI Impersonation — FIR Threat",
-      "content": "We are calling from CBI Delhi headquarters. An FIR has been registered against your name in a money laundering case. To avoid immediate arrest, you must verify your bank account on this call."
-    },
-    {
-      "id": "adc41f6f-aec2-4eaf-8d7c-ccd6e88c569e",
-      "language": "hi",
-      "scam_type": "cbi_impersonation",
-      "title": "सीबीआई फर्जी कॉल — एफआईआर की धमकी",
-      "content": "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। आपके नाम पर मनी लॉन्ड्रिंग केस में एफआईआर दर्ज हुई है। गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।"
-    },
-    {
-      "id": "af94a3e0-2174-4a14-8bf4-049d8958c32f",
-      "language": "en",
-      "scam_type": "tax_evasion",
-      "title": "Income Tax Department Threat Call",
-      "content": "This call is from the Income Tax Department, Investigation Wing. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
-    },
-    {
-      "id": "b2f9f6b2-11d8-4e17-9b7a-15310b34a51a",
-      "language": "hi",
-      "scam_type": "cbi_impersonation",
-      "title": "सीबीआई फर्जी कॉल — एफआईआर की धमकी",
-      "content": "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। आपके नाम पर मनी लॉन्ड्रिंग केस में एफआईआर दर्ज हुई है। गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।"
-    },
-    {
-      "id": "c28c1fdd-59df-47b2-a6d5-fa34786c3364",
-      "language": "hi",
-      "scam_type": "bank_kyc",
-      "title": "बैंक केवाईसी समाप्ति धोखाधड़ी",
-      "content": "प्रिय ग्राहक, आपके बैंक खाते का केवाईसी 2 घंटे में ब्लॉक हो जाएगा। खाता सक्रिय रखने के लिए तुरंत अपने फोन पर आया ओटीपी साझा करें।"
-    },
-    {
-      "id": "ca9deff2-7bfe-4fb6-bf72-9242295045ff",
-      "language": "en",
-      "scam_type": "customs_seizure",
-      "title": "Customs Parcel Seizure Scam",
-      "content": "This is customs department Mumbai airport. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
-    },
-    {
-      "id": "cfdf9479-5ce8-4735-8b25-64d434da026a",
-      "language": "en",
-      "scam_type": "customs_seizure",
-      "title": "Customs Parcel Seizure Scam",
-      "content": "This is customs department Mumbai airport. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
-    },
-    {
-      "id": "d338759d-4201-4392-8b47-daf78d347b54",
-      "language": "hi",
-      "scam_type": "digital_arrest",
-      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
-      "content": "मैं सीबीआई मुंबई से अधिकारी Gupta बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
-    },
-    {
-      "id": "e4b73657-2cb0-4e8e-b4a9-e7c425c47ca4",
-      "language": "en",
-      "scam_type": "tax_evasion",
-      "title": "Income Tax Department Threat Call",
-      "content": "This call is from the Income Tax Department, Investigation Wing. Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless you settle the pending dues today via UPI."
-    },
-    {
-      "id": "ea7b23b4-2e01-4136-bbe1-c8f26c6f74f9",
-      "language": "en",
-      "scam_type": "customs_seizure",
-      "title": "Customs Parcel Seizure Scam",
-      "content": "This is customs department Mumbai airport. A parcel booked under your name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR."
-    },
-    {
-      "id": "f7daa953-8d07-42f6-bbd8-412d2935f0a8",
-      "language": "hi",
-      "scam_type": "customs_seizure",
-      "title": "सीमा शुल्क पार्सल जब्ती घोटाला",
-      "content": "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। आपके नाम से बुक पार्सल जब्त हुआ है जिसमें प्रतिबंधित सामान है। एफआईआर से बचने के लिए अभी जुर्माना भरें।"
-    },
-    {
-      "id": "f807b5b7-b01f-4675-a07b-9f4b95f8fa10",
-      "language": "hi",
-      "scam_type": "customs_seizure",
-      "title": "सीमा शुल्क पार्सल जब्ती घोटाला",
-      "content": "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। आपके नाम से बुक पार्सल जब्त हुआ है जिसमें प्रतिबंधित सामान है। एफआईआर से बचने के लिए अभी जुर्माना भरें।"
-    },
-    {
-      "id": "fc2735ac-6b19-4178-895d-350279741e11",
-      "language": "hi",
-      "scam_type": "digital_arrest",
-      "title": "फर्जी सीबीआई डिजिटल गिरफ्तारी — पार्सल चेतावनी",
-      "content": "मैं सीबीआई मुंबई से अधिकारी Gupta बोल रहा हूं। आपके आधार से जुड़े पार्सल में अवैध सामान मिला है। आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।"
-    },
-    {
-      "id": "fe6763c5-5fbf-48f1-9cf7-93450aad83d6",
-      "language": "hi",
-      "scam_type": "bank_kyc",
-      "title": "बैंक केवाईसी समाप्ति धोखाधड़ी",
-      "content": "प्रिय ग्राहक, आपके बैंक खाते का केवाईसी 2 घंटे में ब्लॉक हो जाएगा। खाता सक्रिय रखने के लिए तुरंत अपने फोन पर आया ओटीपी साझा करें।"
+      "content": "We are calling from CBI Delhi headquarters. This is Inspector Gupta. An FIR has been registered against your name in a money laundering case. To avoid immediate arrest, you must verify your bank account on this call."
     }
   ]
 }

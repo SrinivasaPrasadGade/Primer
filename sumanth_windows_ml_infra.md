@@ -654,4 +654,4 @@ Available for OS:                                   ~1.5 GB
 - [x] Copilot function calling schema defined
 - [x] Cross-module correlation logic (link scam session → graph → map)
 - [x] Verify inference times (< 3s for note, < 2s for voice) *(run: `python ml/benchmark_inference.py`; note p95 413ms, voice p95 49ms on this machine)*
-- [ ] Final seed data polish (make it look realistic)
+- [x] Final seed data polish (make it look realistic) *(deduped `scam_script_corpus`, wired 25 RED sessions into the fraud graph + geo map so cross-module correlation has real matches, fixed a call-end-in-the-future bug; verified by loading `01_seed.sql` into a real Postgres)*

@@ -63,6 +63,22 @@ SCAM_PHASES = ["opening", "trust_building", "fear_induction", "payment_demand", 
 
 CRIME_TYPES = ["digital_arrest", "upi_fraud", "ficn_seizure", "investment_scam", "phishing", "other"]
 
+# geo_intel.incidents.crime_type has a CHECK constraint limited to CRIME_TYPES above,
+# which doesn't line up 1:1 with SCAM_TYPES — map each scam_sessions.scam_type to the
+# closest allowed crime_type for the cross-linked incidents (see LINKED_SESSION_COUNT).
+SCAM_TYPE_TO_CRIME_TYPE = {
+    "digital_arrest": "digital_arrest",
+    "cbi_impersonation": "other",
+    "customs_seizure": "other",
+    "tax_evasion": "other",
+    "bank_kyc": "phishing",
+}
+
+# Number of RED-alert scam_sessions cross-linked into the fraud graph (as a matching
+# phone_number entity) and geo-intel map (as an incident with source_ref_id set), so
+# the scam_sentinel -> fraud_graph -> geo_intel correlation path has real data to find.
+LINKED_SESSION_COUNT = 25
+
 HOUR_WEIGHTS = [1] * 6 + [3, 5, 8, 10, 10, 10, 8, 8, 5, 3, 2, 2, 1, 1, 1, 1, 1, 1]
 
 TELECOM_PROVIDERS = ["Jio", "Airtel", "Vi", "BSNL"]
@@ -78,33 +94,36 @@ SCRIPT_TEMPLATES = [
      "आप डिजिटल गिरफ्तारी में हैं। कॉल मत काटिए वरना गिरफ्तारी वारंट जारी होगा।",
      ["डिजिटल गिरफ्तारी", "कॉल मत काटिए", "वारंट", "आधार लिंक"]),
     ("en", "cbi_impersonation", "CBI Impersonation — FIR Threat",
-     "We are calling from CBI Delhi headquarters. An FIR has been registered against your name in a "
-     "money laundering case. To avoid immediate arrest, you must verify your bank account on this call.",
+     "We are calling from CBI Delhi headquarters. This is Inspector {name}. An FIR has been registered "
+     "against your name in a money laundering case. To avoid immediate arrest, you must verify your "
+     "bank account on this call.",
      ["FIR registered", "money laundering", "immediate arrest", "verify bank account"]),
     ("hi", "cbi_impersonation", "सीबीआई फर्जी कॉल — एफआईआर की धमकी",
-     "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। आपके नाम पर मनी लॉन्ड्रिंग केस में एफआईआर दर्ज हुई है। "
-     "गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।",
+     "हम सीबीआई दिल्ली मुख्यालय से बोल रहे हैं। मैं इंस्पेक्टर {name} बोल रहा हूं। आपके नाम पर मनी लॉन्ड्रिंग "
+     "केस में एफआईआर दर्ज हुई है। गिरफ्तारी से बचने के लिए तुरंत अपना बैंक खाता सत्यापित करें।",
      ["एफआईआर दर्ज", "मनी लॉन्ड्रिंग", "तुरंत गिरफ्तारी", "बैंक खाता सत्यापित"]),
     ("en", "customs_seizure", "Customs Parcel Seizure Scam",
-     "This is customs department Mumbai airport. A parcel booked under your name has been seized, "
-     "containing banned items and cash worth lakhs. Pay the customs penalty now to avoid FIR.",
+     "This is customs department Mumbai airport. This is Officer {name}. A parcel booked under your "
+     "name has been seized, containing banned items and cash worth lakhs. Pay the customs penalty now "
+     "to avoid FIR.",
      ["parcel seized", "customs penalty", "banned items", "pay now"]),
     ("hi", "customs_seizure", "सीमा शुल्क पार्सल जब्ती घोटाला",
-     "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। आपके नाम से बुक पार्सल जब्त हुआ है जिसमें प्रतिबंधित सामान है। "
-     "एफआईआर से बचने के लिए अभी जुर्माना भरें।",
+     "यह मुंबई एयरपोर्ट सीमा शुल्क विभाग है। मैं अधिकारी {name} बोल रहा हूं। आपके नाम से बुक पार्सल जब्त हुआ है "
+     "जिसमें प्रतिबंधित सामान है। एफआईआर से बचने के लिए अभी जुर्माना भरें।",
      ["पार्सल जब्त", "जुर्माना भरें", "प्रतिबंधित सामान", "एफआईआर से बचें"]),
     ("en", "tax_evasion", "Income Tax Department Threat Call",
-     "This call is from the Income Tax Department, Investigation Wing. Discrepancies worth several "
-     "lakhs have been found in your recent filings. A non-bailable warrant is being prepared unless "
-     "you settle the pending dues today via UPI.",
+     "This call is from the Income Tax Department, Investigation Wing. I am Officer {name}. "
+     "Discrepancies worth several lakhs have been found in your recent filings. A non-bailable warrant "
+     "is being prepared unless you settle the pending dues today via UPI.",
      ["income tax department", "non-bailable warrant", "settle dues", "pay via UPI"]),
     ("en", "bank_kyc", "Bank KYC Expiry Fraud",
-     "Dear customer, your bank account KYC will be blocked within 2 hours. Share the OTP sent to your "
-     "phone immediately to keep your account active and avoid permanent suspension.",
+     "Dear customer, this is {name} from the bank's verification team. Your bank account KYC will be "
+     "blocked within 2 hours. Share the OTP sent to your phone immediately to keep your account active "
+     "and avoid permanent suspension.",
      ["KYC will be blocked", "share the OTP", "account suspension", "keep account active"]),
     ("hi", "bank_kyc", "बैंक केवाईसी समाप्ति धोखाधड़ी",
-     "प्रिय ग्राहक, आपके बैंक खाते का केवाईसी 2 घंटे में ब्लॉक हो जाएगा। खाता सक्रिय रखने के लिए तुरंत "
-     "अपने फोन पर आया ओटीपी साझा करें।",
+     "प्रिय ग्राहक, मैं बैंक सत्यापन टीम से {name} बोल रहा हूं। आपके बैंक खाते का केवाईसी 2 घंटे में ब्लॉक हो "
+     "जाएगा। खाता सक्रिय रखने के लिए तुरंत अपने फोन पर आया ओटीपी साझा करें।",
      ["केवाईसी ब्लॉक", "ओटीपी साझा करें", "खाता निलंबन"]),
 ]
 
@@ -191,11 +210,16 @@ SUMANTH_USER = "(SELECT id FROM core.users WHERE email = 'sumanth@primer.demo')"
 
 # ── 1. scam_sentinel.scam_sessions (500: 20% RED / 40% AMBER / 40% YELLOW) ──
 def gen_scam_sessions():
+    """Returns the RED-alert sessions selected to be cross-linked into the fraud
+    graph and geo-intel map (see gen_fraud_graph/gen_geo_incidents), so the
+    scam_sentinel -> fraud_graph -> geo_intel correlation path
+    (backend/app/services/correlation.py) has real matches to find in the demo."""
     emit("-- scam_sentinel.scam_sessions")
     levels = ["RED"] * 100 + ["AMBER"] * 200 + ["YELLOW"] * 200
     random.shuffle(levels)
     scam_keys = list(SCAM_TYPES.keys())
     scam_weights = list(SCAM_TYPES.values())
+    linked_sessions = []
 
     for level in levels:
         confidence = {
@@ -205,8 +229,10 @@ def gen_scam_sessions():
         }[level]
         scam_type = random.choices(scam_keys, weights=scam_weights)[0]
         scam_phase = random.choice(SCAM_PHASES)
-        hours_ago = random.randint(1, 720)
         duration = random.randint(180, 5400)
+        # Anchor on when the call ENDED (not started) so call_start is always
+        # further in the past — a call can never end in the future.
+        hours_since_end = random.randint(1, 720)
         spoofed = random.random() > 0.55
         deepfake = random.random() > 0.7
         status = random.choices(
@@ -221,6 +247,9 @@ def gen_scam_sessions():
             "urgency_phrases": {"score": round(random.uniform(0.7, 1.0), 2)},
         })
         acknowledged = status in ("acknowledged", "investigating", "closed")
+        session_id = uid()
+        caller = rand_phone()
+        callee = rand_phone()
 
         emit(f"""INSERT INTO scam_sentinel.scam_sessions
             (id, caller_number, callee_number, call_start, call_end, call_duration_sec,
@@ -228,17 +257,23 @@ def gen_scam_sessions():
              spoofing_detected, real_originating_number, deepfake_detected,
              voice_synthetic_probability, status, acknowledged_by, acknowledged_at)
             VALUES (
-             '{uid()}', '{rand_phone()}', '{rand_phone()}',
-             NOW() - interval '{hours_ago} hours',
-             NOW() - interval '{hours_ago} hours' + interval '{duration} seconds',
+             '{session_id}', '{caller}', '{callee}',
+             NOW() - interval '{hours_since_end} hours' - interval '{duration} seconds',
+             NOW() - interval '{hours_since_end} hours',
              {duration}, '{level}', {confidence:.1f}, '{scam_type}', '{scam_phase}',
              '{signals}'::jsonb, {str(spoofed).lower()},
              {("'" + rand_phone() + "'") if spoofed else "NULL"},
              {str(deepfake).lower()}, {random.uniform(0.3, 0.9):.2f}, '{status}',
              {YASHI if acknowledged else "NULL"},
-             {"NOW() - interval '" + str(random.randint(0, hours_ago)) + " hours'" if acknowledged else "NULL"}
+             {"NOW() - interval '" + str(random.randint(0, hours_since_end)) + " hours'" if acknowledged else "NULL"}
             );""")
+
+        if level == "RED" and len(linked_sessions) < LINKED_SESSION_COUNT:
+            linked_sessions.append(
+                {"id": session_id, "caller": caller, "callee": callee, "scam_type": scam_type}
+            )
     emit("")
+    return linked_sessions
 
 
 # ── 2. scam_sentinel.number_reputation (100) ────────────────────────────────
@@ -272,17 +307,20 @@ def gen_number_reputation():
 def gen_script_corpus():
     emit("-- scam_sentinel.scam_script_corpus")
     names = ["Sharma", "Verma", "Iyer", "Reddy", "Khan", "Rao", "Gupta"]
-    count = 0
-    while count < 50:
-        lang, scam_type, title, content, phrases = random.choice(SCRIPT_TEMPLATES)
-        rendered = content.replace("{name}", random.choice(names))
+    # Every template now has a {name} placeholder, so each (template, name) combo
+    # renders to distinct content. Sample combos without replacement so the
+    # corpus never contains two byte-identical rows.
+    combos = [(t, name) for t in range(len(SCRIPT_TEMPLATES)) for name in names]
+    random.shuffle(combos)
+    for t_idx, name in combos[:50]:
+        lang, scam_type, title, content, phrases = SCRIPT_TEMPLATES[t_idx]
+        rendered = content.replace("{name}", name)
         emit(f"""INSERT INTO scam_sentinel.scam_script_corpus
             (id, language, scam_type, title, content, key_phrases, times_matched, is_active)
             VALUES (
              '{uid()}', '{lang}', '{scam_type}', '{esc(title)}', '{esc(rendered)}',
              {pg_array(phrases)}, {random.randint(0, 200)}, TRUE
             );""")
-        count += 1
     emit("")
 
 
@@ -302,16 +340,19 @@ def gen_counterfeit_serials():
 
 
 # ── 5. fraud_graph.entities + edges + clusters (200+ / 400+, 6 clusters) ───
-def gen_fraud_graph():
+def gen_fraud_graph(linked_sessions):
     emit("-- fraud_graph.clusters")
     cluster_ids = [uid() for _ in range(6)]
+    # Named after cities in CITIES only — geo_incidents are plotted from that same
+    # set, so a cluster referencing a city with no incidents on the map would look
+    # broken in the demo.
     cluster_names = [
         "Mumbai Digital Arrest Ring",
         "Delhi CBI Impersonation Network",
         "Hyderabad Customs Scam Cell",
         "Bangalore UPI Mule Network",
-        "Chennai Tax Notice Syndicate",
-        "Pune Loan App Harassment Cell",
+        "Bangalore Tax Notice Syndicate",
+        "Mumbai Loan App Harassment Cell",
     ]
     for cid, name in zip(cluster_ids, cluster_names):
         emit(f"""INSERT INTO fraud_graph.clusters
@@ -324,12 +365,13 @@ def gen_fraud_graph():
     emit("-- fraud_graph.entities")
     entity_ids_by_cluster = {cid: [] for cid in cluster_ids}
     entity_types = ["phone_number", "bank_account", "upi_id", "person", "device", "ip_address"]
+    # fraud_graph.entities has UNIQUE (entity_type, entity_value) — "person" values
+    # in particular are drawn from a small enough space (9000 combos) that plain
+    # random.randint collides across ~280 entities, so track everything used.
+    used_entity_values = set()
 
-    for cid in cluster_ids:
-        n_entities = random.randint(35, 45)
-        for _ in range(n_entities):
-            etype = random.choices(entity_types, weights=[30, 20, 20, 15, 10, 5])[0]
-            eid = uid()
+    def gen_entity_value(etype):
+        while True:
             if etype == "phone_number":
                 value = rand_phone()
             elif etype == "bank_account":
@@ -342,6 +384,25 @@ def gen_fraud_graph():
                 value = f"IMEI-{random.randint(100000000000000, 999999999999999)}"
             else:
                 value = f"{random.randint(1,223)}.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}"
+            if (etype, value) not in used_entity_values:
+                used_entity_values.add((etype, value))
+                return value
+
+    # Distribute the RED-alert sessions to be cross-linked round-robin across
+    # clusters, so each cluster gets a scam_sessions.caller_number as one of its
+    # phone_number entities. That's the join key correlation.py's
+    # _matched_entities() uses to walk a session into its fraud-graph cluster.
+    linked_by_cluster = {cid: [] for cid in cluster_ids}
+    for i, sess in enumerate(linked_sessions):
+        linked_by_cluster[cluster_ids[i % len(cluster_ids)]].append(sess)
+        used_entity_values.add(("phone_number", sess["caller"]))
+
+    for cid in cluster_ids:
+        n_entities = random.randint(35, 45)
+        for _ in range(n_entities):
+            etype = random.choices(entity_types, weights=[30, 20, 20, 15, 10, 5])[0]
+            eid = uid()
+            value = gen_entity_value(etype)
 
             entity_ids_by_cluster[cid].append((eid, etype))
             risk = random.randint(40, 100)
@@ -349,6 +410,15 @@ def gen_fraud_graph():
                 (id, entity_type, entity_value, display_label, risk_score, properties, cluster_id, first_seen, last_seen)
                 VALUES ('{eid}', '{etype}', '{esc(value)}', '{esc(value)}', {risk}, '{{}}'::jsonb,
                  '{cid}', NOW() - interval '{random.randint(10, 400)} days', NOW() - interval '{random.randint(0, 10)} days');""")
+
+        for sess in linked_by_cluster[cid]:
+            eid = uid()
+            entity_ids_by_cluster[cid].append((eid, "phone_number"))
+            emit(f"""INSERT INTO fraud_graph.entities
+                (id, entity_type, entity_value, display_label, risk_score, properties, cluster_id, first_seen, last_seen)
+                VALUES ('{eid}', 'phone_number', '{sess["caller"]}', '{sess["caller"]}', {random.randint(85, 100)},
+                 '{{}}'::jsonb, '{cid}', NOW() - interval '{random.randint(10, 400)} days',
+                 NOW() - interval '{random.randint(0, 3)} days');""")
     emit("")
 
     emit("-- fraud_graph.edges")
@@ -371,9 +441,30 @@ def gen_fraud_graph():
 
 
 # ── 6. geo_intel.incidents (550) ────────────────────────────────────────────
-def gen_geo_incidents():
+def gen_geo_incidents(linked_sessions):
     emit("-- geo_intel.incidents")
-    for _ in range(550):
+
+    # Cross-linked incidents: source_module/source_ref_id point back at a real
+    # scam_sessions row, which is what correlation.py's _map_incidents() joins on.
+    for sess in linked_sessions:
+        city, state, lat, lon = city_point()
+        crime_type = SCAM_TYPE_TO_CRIME_TYPE[sess["scam_type"]]
+        severity = random.choices(["medium", "high", "critical"], weights=[20, 40, 40])[0]
+        emit(f"""INSERT INTO geo_intel.incidents
+            (id, crime_type, title, description, location, state, district, pin_code,
+             severity, estimated_loss, source_module, source_ref_id, reported_at)
+            VALUES (
+             '{uid()}', '{crime_type}',
+             '{esc(crime_type.replace("_", " ").title())} reported in {city}',
+             'Correlated with an active scam_sentinel RED alert session.',
+             ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326),
+             '{state}', '{city}', '{random.randint(400000, 599999)}',
+             '{severity}', {random.uniform(5000, 1500000):.2f},
+             'scam_sentinel', '{sess["id"]}',
+             NOW() - interval '{random.randint(1, 30)} days'
+            );""")
+
+    for _ in range(550 - len(linked_sessions)):
         city, state, lat, lon = city_point()
         crime_type = random.choice(CRIME_TYPES)
         severity = random.choices(["low", "medium", "high", "critical"], weights=[20, 40, 30, 10])[0]
@@ -486,12 +577,12 @@ def gen_kb_patterns():
 def main():
     emit("BEGIN;")
     emit("")
-    gen_scam_sessions()
+    linked_sessions = gen_scam_sessions()
     gen_number_reputation()
     gen_script_corpus()
     gen_counterfeit_serials()
-    gen_fraud_graph()
-    gen_geo_incidents()
+    gen_fraud_graph(linked_sessions)
+    gen_geo_incidents(linked_sessions)
     gen_qr_flagged()
     gen_case_summaries()
     gen_kb_patterns()
