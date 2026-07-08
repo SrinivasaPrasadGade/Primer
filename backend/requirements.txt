@@ -14,3 +14,11 @@ python-multipart==0.0.9
 google-generativeai==0.7.1
 pgvector==0.2.5
 geoalchemy2==0.15.1
+sentence-transformers==3.0.1
+faiss-cpu==1.9.0
+shapely==2.0.4
+langdetect==1.0.9
+numpy==2.1.3
+joblib==1.4.2
+scikit-learn==1.5.2
+xgboost==2.1.3
