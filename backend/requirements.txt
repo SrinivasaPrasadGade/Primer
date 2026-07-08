@@ -14,3 +14,7 @@ python-multipart==0.0.9
 google-generativeai==0.7.1
 pgvector==0.2.5
 geoalchemy2==0.15.1
+sentence-transformers==3.0.1
+faiss-cpu==1.8.0
+shapely==2.0.4
+langdetect==1.0.9
