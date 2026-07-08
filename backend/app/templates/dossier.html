@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Fraud Cluster Dossier</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: 'DejaVu Sans', sans-serif; font-size: 11pt; color: #1a1a1a; }
+  h1 { font-size: 20pt; margin-bottom: 0; }
+  h2 { font-size: 13pt; margin-top: 24px; border-bottom: 2px solid #222; padding-bottom: 4px; }
+  .subtitle { color: #666; margin-top: 4px; }
+  .meta { margin: 16px 0; padding: 12px; background: #f4f4f4; border-radius: 4px; }
+  .meta span { display: inline-block; margin-right: 24px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; font-size: 9.5pt; }
+  th { background: #222; color: white; }
+  .risk-high { color: #b30000; font-weight: bold; }
+  .risk-medium { color: #b36b00; }
+  .risk-low { color: #2e7d32; }
+  .empty { color: #888; font-style: italic; }
+  .footer { margin-top: 24px; font-size: 8pt; color: #888; }
+</style>
+</head>
+<body>
+  <h1>Fraud Cluster Dossier</h1>
+  <p class="subtitle">{{ cluster.name or "Unnamed Cluster" }}</p>
+
+  <div class="meta">
+    <span><strong>Status:</strong> {{ cluster.status }}</span>
+    <span><strong>Entities:</strong> {{ cluster.node_count }}</span>
+    <span><strong>Connections:</strong> {{ cluster.edge_count }}</span>
+    <span><strong>Estimated loss:</strong> Rs. {{ "{:,.2f}".format(cluster.estimated_loss or 0) }}</span>
+    <span><strong>Victims:</strong> {{ cluster.victim_count or 0 }}</span>
+  </div>
+
+  <h2>Entities ({{ nodes|length }})</h2>
+  {% if nodes %}
+  <table>
+    <tr><th>Type</th><th>Value</th><th>Label</th><th>Risk Score</th></tr>
+    {% for node in nodes %}
+    <tr>
+      <td>{{ node.entity_type }}</td>
+      <td>{{ node.entity_value }}</td>
+      <td>{{ node.display_label or "" }}</td>
+      <td class="{{ 'risk-high' if node.risk_score >= 70 else ('risk-medium' if node.risk_score >= 30 else 'risk-low') }}">
+        {{ node.risk_score }}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="empty">No entities recorded for this cluster.</p>
+  {% endif %}
+
+  <h2>Connections ({{ edges|length }})</h2>
+  {% if edges %}
+  <table>
+    <tr><th>From</th><th>Relationship</th><th>To</th><th>Weight</th></tr>
+    {% for edge in edges %}
+    <tr>
+      <td>{{ edge.source_label }}</td>
+      <td>{{ edge.relationship }}</td>
+      <td>{{ edge.target_label }}</td>
+      <td>{{ edge.weight }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="empty">No connections recorded for this cluster.</p>
+  {% endif %}
+
+  <h2>Timeline</h2>
+  {% if timeline %}
+  <table>
+    <tr><th>Date</th><th>Event</th></tr>
+    {% for item in timeline %}
+    <tr><td>{{ item.date or "unknown" }}</td><td>{{ item.event }}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="empty">No timeline events available.</p>
+  {% endif %}
+
+  <div class="footer">
+    Generated {{ generated_at }} by officer {{ generated_by }} &mdash; Primer Fraud Intelligence Platform
+  </div>
+</body>
+</html>

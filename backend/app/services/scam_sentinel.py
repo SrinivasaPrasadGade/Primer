@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from decimal import Decimal
 import logging
 from dataclasses import dataclass
 from datetime import datetime
@@ -32,8 +33,19 @@ class SignalResult:
 
 
 def _to_jsonable(value):
-    """Round-trip UUID/datetime/Decimal through JSON so they're plain str/float."""
-    return json.loads(json.dumps(value, default=str))
+    """Round-trip UUID/datetime/Decimal through JSON so they're plain str/float.
+
+    Decimal must become a JSON number, not a string -- json.dumps(default=str) on its
+    own stringifies Decimal, which silently breaks downstream numeric use (e.g. a
+    Jinja "{:,.2f}".format(...) on a value that's now a str, or a risk_score/weight
+    field that renders as "85" instead of 85 in an API response).
+    """
+    def _default(v):
+        if isinstance(v, Decimal):
+            return float(v)
+        return str(v)
+
+    return json.loads(json.dumps(value, default=_default))
 
 
 # ---------------------------------------------------------------------------
@@ -103,19 +115,128 @@ def detect_urgency_phrases(text_content: str) -> SignalResult:
 
 
 # ---------------------------------------------------------------------------
-# Signal 4: Voice synthetic probability — passthrough of VoiceSpoofDetector output
+# Signal 4: Voice synthetic probability — passthrough of VoiceSpoofDetector output,
+# plus a live inference wrapper for when raw audio is available.
 # ---------------------------------------------------------------------------
+
+def _voice_explanation_from_probability(probability: float, deepfake_detected: bool = False) -> str:
+    if deepfake_detected or probability >= 0.7:
+        return f"VoiceSpoofDetector flags {probability * 100:.0f}% synthetic-voice probability"
+    if probability >= 0.3:
+        return f"Some synthetic-voice indicators ({probability * 100:.0f}%), inconclusive"
+    return "Voice sample consistent with genuine human speech"
+
 
 def generate_voice_explanation(session_data: dict) -> str:
     # voice_synthetic_probability is stored 0-1 (verified against seed data), not 0-100.
     # DB columns are NUMERIC/DECIMAL -> asyncpg returns Decimal, not float; normalize here
     # so downstream arithmetic (compute_signal_scores) never mixes Decimal with float.
     probability = float(session_data.get("voice_synthetic_probability") or 0)
-    if session_data.get("deepfake_detected") or probability >= 0.7:
-        return f"VoiceSpoofDetector flags {probability * 100:.0f}% synthetic-voice probability"
-    if probability >= 0.3:
-        return f"Some synthetic-voice indicators ({probability * 100:.0f}%), inconclusive"
-    return "Voice sample consistent with genuine human speech"
+    return _voice_explanation_from_probability(probability, bool(session_data.get("deepfake_detected")))
+
+
+VOICE_SAMPLE_RATE = 16_000
+VOICE_CLIP_SECONDS = 4
+VOICE_N_MELS = 128
+VOICE_N_FFT = 400  # 25ms @ 16kHz
+VOICE_HOP_LENGTH = 160  # 10ms @ 16kHz
+
+
+def _build_voice_spoof_model():
+    """Construct the LCNN architecture from ml/voice-spoof-detector/train.py.
+
+    Built lazily (not at import time) since it needs torch, which is only a hard
+    dependency when live audio inference is actually used.
+    """
+    import torch
+    import torch.nn as nn
+
+    class MFM(nn.Module):
+        def __init__(self, out_channels: int):
+            super().__init__()
+            self.out_channels = out_channels
+
+        def forward(self, x):
+            a, b = torch.split(x, self.out_channels, dim=1)
+            return torch.max(a, b)
+
+    class VoiceSpoofDetector(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.features = nn.Sequential(
+                nn.Conv2d(1, 64, 5, 1, 2), nn.MaxPool2d(2),
+                nn.Conv2d(64, 64, 1, 1, 0), MFM(32),
+                nn.Conv2d(32, 96, 3, 1, 1), nn.MaxPool2d(2),
+                nn.Conv2d(96, 96, 1, 1, 0), MFM(48),
+                nn.Conv2d(48, 128, 3, 1, 1), nn.MaxPool2d(2),
+                nn.Conv2d(128, 128, 1, 1, 0), MFM(64),
+            )
+            self.classifier = nn.Sequential(
+                nn.Linear(64 * 16 * 50, 256), nn.ReLU(), nn.Dropout(0.5),
+                nn.Linear(256, 1),
+            )
+
+        def forward(self, x):
+            x = self.features(x)
+            x = x.view(x.size(0), -1)
+            return torch.sigmoid(self.classifier(x))
+
+    return VoiceSpoofDetector()
+
+
+@lru_cache(maxsize=1)
+def _load_voice_spoof_model():
+    import torch
+
+    model = _build_voice_spoof_model()
+    state_dict = torch.load(ML_MODELS_DIR / "voice_spoof.pth", map_location="cpu", weights_only=True)
+    model.load_state_dict(state_dict)
+    model.eval()
+    return model
+
+
+def _audio_to_mel_spectrogram(audio_bytes: bytes) -> np.ndarray:
+    """4s clip @ 16kHz -> 128x400 z-normalized log-mel spectrogram, matching training preprocessing."""
+    import io
+
+    import librosa
+
+    audio, _ = librosa.load(io.BytesIO(audio_bytes), sr=VOICE_SAMPLE_RATE, mono=True)
+    target_len = VOICE_SAMPLE_RATE * VOICE_CLIP_SECONDS
+    if len(audio) < target_len:
+        audio = np.pad(audio, (0, target_len - len(audio)))
+    else:
+        audio = audio[:target_len]
+
+    mel = librosa.feature.melspectrogram(
+        y=audio, sr=VOICE_SAMPLE_RATE, n_fft=VOICE_N_FFT, hop_length=VOICE_HOP_LENGTH, n_mels=VOICE_N_MELS
+    )
+    log_mel = librosa.power_to_db(mel, ref=np.max)
+    return (log_mel - log_mel.mean()) / (log_mel.std() + 1e-8)
+
+
+async def detect_voice_synthetic(audio_bytes: bytes) -> SignalResult:
+    """Run VoiceSpoofDetector on a raw audio clip and return a synthetic-voice signal.
+
+    Companion to generate_voice_explanation()/the voice_synthetic signal in
+    compute_signal_scores(), for callers that have the raw call-audio clip rather than
+    a value already stored on scam_sessions (e.g. the mobile app's live call screening).
+    """
+    try:
+        model = _load_voice_spoof_model()
+    except FileNotFoundError:
+        return SignalResult(0.0, "VoiceSpoofDetector model unavailable")
+
+    def _infer():
+        import torch
+
+        mel = _audio_to_mel_spectrogram(audio_bytes)
+        tensor = torch.from_numpy(mel).float().unsqueeze(0).unsqueeze(0)  # (1, 1, 128, 400)
+        with torch.no_grad():
+            return float(model(tensor).item())
+
+    probability = await asyncio.to_thread(_infer)
+    return SignalResult(probability, _voice_explanation_from_probability(probability))
 
 
 # ---------------------------------------------------------------------------

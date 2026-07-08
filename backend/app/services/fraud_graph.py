@@ -7,6 +7,7 @@ dicts/lists directly; no ORM models, raw SQL via SQLAlchemy Core (matches correl
 from __future__ import annotations
 
 import json
+from decimal import Decimal
 from collections import defaultdict
 from uuid import UUID
 
@@ -15,8 +16,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def _to_jsonable(value):
-    """Round-trip UUID/datetime/Decimal through JSON so they're plain str/float."""
-    return json.loads(json.dumps(value, default=str))
+    """Round-trip UUID/datetime/Decimal through JSON so they're plain str/float.
+
+    Decimal must become a JSON number, not a string -- json.dumps(default=str) on its
+    own stringifies Decimal, which silently breaks downstream numeric use (e.g. a
+    Jinja "{:,.2f}".format(...) on a value that's now a str, or a risk_score/weight
+    field that renders as "85" instead of 85 in an API response).
+    """
+    def _default(v):
+        if isinstance(v, Decimal):
+            return float(v)
+        return str(v)
+
+    return json.loads(json.dumps(value, default=_default))
 
 
 # ---------------------------------------------------------------------------
