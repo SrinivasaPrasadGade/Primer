@@ -29,3 +29,5 @@ librosa==0.10.2
 soundfile==0.12.1
 jinja2==3.1.6
 weasyprint==69.0
+timm==1.0.27
+pillow==12.3.0
