@@ -100,6 +100,49 @@ def test_generate_voice_explanation_genuine():
 
 
 # ---------------------------------------------------------------------------
+# Deepfake voice inference wrapper — degrade gracefully without the model file
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_detect_voice_synthetic_model_missing(monkeypatch):
+    def _raise():
+        raise FileNotFoundError
+
+    monkeypatch.setattr(svc, "_load_voice_spoof_model", _raise)
+    result = await svc.detect_voice_synthetic(b"irrelevant audio bytes")
+    assert result.score == 0.0
+    assert result.explanation == "VoiceSpoofDetector model unavailable"
+
+
+@pytest.mark.asyncio
+async def test_detect_voice_synthetic_with_model(monkeypatch):
+    import numpy as np
+
+    class FakeModel:
+        def __call__(self, tensor):
+            class FakeTensor:
+                def item(self):
+                    return 0.87
+
+            return FakeTensor()
+
+    monkeypatch.setattr(svc, "_load_voice_spoof_model", lambda: FakeModel())
+    monkeypatch.setattr(svc, "_audio_to_mel_spectrogram", lambda audio_bytes: np.zeros((128, 400), dtype="float32"))
+
+    result = await svc.detect_voice_synthetic(b"irrelevant audio bytes")
+
+    assert result.score == pytest.approx(0.87)
+    assert "flags" in result.explanation
+
+
+def test_voice_explanation_from_probability_thresholds():
+    assert "genuine" in svc._voice_explanation_from_probability(0.1)
+    assert "inconclusive" in svc._voice_explanation_from_probability(0.5)
+    assert "flags" in svc._voice_explanation_from_probability(0.9)
+    assert "flags" in svc._voice_explanation_from_probability(0.1, deepfake_detected=True)
+
+
+# ---------------------------------------------------------------------------
 # Script similarity — degrade gracefully without the FAISS artifacts
 # ---------------------------------------------------------------------------
 
