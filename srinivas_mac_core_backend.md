@@ -64,7 +64,9 @@ passlib[bcrypt]==1.*
 redis[hiredis]==5.*
 
 # Gemini API
-google-genai==1.*
+google-generativeai==0.7.1   # NOTE: the classic google.generativeai SDK, NOT the newer
+                             # `google-genai` package. Sumanth already ships
+                             # app/services/gemini_client.py against this one — don't swap it.
 
 # ML inference (lightweight — heavy training is Sumanth's job)
 joblib==1.*
@@ -265,20 +267,38 @@ async def get_session_with_signals(db, session_id: UUID):
 
 ### 4.1 Setup
 
+> **Already implemented by Sumanth** in `app/services/gemini_client.py` (Phase 1) — do
+> not rewrite it. It uses the classic `google.generativeai` SDK (`google-generativeai==0.7.1`),
+> lazy-configures from `settings.gemini_api_key`, and retries on rate limits. Import and
+> call its async helpers rather than newing up a client. Available functions:
+>
+> | Function | Use |
+> |---|---|
+> | `generate(prompt, *, system_instruction=None, temperature=0.3, model_name=...)` | Plain text |
+> | `generate_json(prompt, ...)` | JSON output, parsed (case summaries) |
+> | `generate_with_tools(prompt, tools, ...)` + `extract_function_calls(response)` | Raw function-calling |
+> | `run_with_tools(prompt, tools, dispatch, ...)` | Full function-calling loop (Copilot) |
+
 ```python
-# app/services/gemini_client.py
-from google import genai
+# app/services/gemini_client.py (as shipped — excerpt)
+import google.generativeai as genai   # classic SDK, NOT `from google import genai`
+from app.config import settings
 
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_TEMPERATURE = 0.3
 
-async def generate(prompt: str, system_instruction: str = None) -> str:
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-        config=genai.types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            temperature=0.3,
-        )
+async def generate(
+    prompt: str,
+    *,
+    system_instruction: str | None = None,
+    temperature: float = DEFAULT_TEMPERATURE,
+    model_name: str = DEFAULT_MODEL,
+) -> str:
+    """Generate plain text from a prompt (lazy-configures the API key, retries on 429)."""
+    model = _build_model(system_instruction, tools=None, model_name=model_name)
+    generation_config = genai.types.GenerationConfig(temperature=temperature)
+    response = await _call_with_retries(
+        lambda: model.generate_content(prompt, generation_config=generation_config)
     )
     return response.text
 ```
@@ -293,6 +313,12 @@ async def generate(prompt: str, system_instruction: str = None) -> str:
 | **Explainable AI** | Generate human-readable explanations from signal scores |
 
 ### 4.3 Copilot Query Flow (Gemini Function Calling)
+
+> **Note:** `app/services/copilot.py` (the `COPILOT_TOOLS` schema + the
+> function-calling loop via `run_with_tools`) and a thin `app/routers/copilot.py`
+> already exist from Sumanth's Phase 1. Srinivas's job here is just to confirm the
+> router is mounted and returns cleanly; the tool schema below is illustrative of
+> what's already there.
 
 ```python
 # app/services/copilot.py

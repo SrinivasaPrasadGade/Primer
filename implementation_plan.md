@@ -115,25 +115,25 @@ This plan is structured into 4 sequential phases, where each phase represents a 
 **Goal:** Establish the foundation (database, containers, seed data) and train all ML models.
 
 ```
-PHASE 1: SUMANTH
+PHASE 1: SUMANTH  ✅ COMPLETE (see sumanth_windows_ml_infra.md)
 ─────────────────────────────────────────────────────────────
 ├── 1. Infrastructure
-│   ├── [ ] Docker Compose: PostgreSQL + PostGIS + pgvector + Redis
-│   ├── [ ] Database migrations (all schemas from Backend Schema doc)
-│   ├── [ ] Seed data: 50+ scam sessions, 100+ graph entities, 200+ geo incidents
-│   └── [ ] Verify: docker compose up → all healthy
+│   ├── [x] Docker Compose: PostgreSQL + PostGIS + pgvector + Redis
+│   ├── [x] Database migrations (all schemas from Backend Schema doc)
+│   ├── [x] Seed data: 500 scam sessions, ~280 graph entities, 550 geo incidents
+│   └── [x] Verify: docker compose up → all healthy
 │
 ├── 2. ML Models Training
-│   ├── [ ] NoteAuthNet training (EfficientNet-B4) → model.pth & model.tflite
-│   ├── [ ] VoiceSpoofDetector training (LCNN) → voice_spoof.pth
-│   ├── [ ] XGBoost scam classifier → scam_classifier.joblib
-│   └── [ ] Hotspot Predictor (Random Forest) → hotspot_predictor.joblib
+│   ├── [x] NoteAuthNet training (EfficientNet-B4) → model.pth & model.tflite
+│   ├── [x] VoiceSpoofDetector training (LCNN) → voice_spoof.pth
+│   ├── [x] XGBoost scam classifier → scam_classifier.joblib
+│   └── [x] Hotspot Predictor (Random Forest) → hotspot_predictor.joblib
 │
 ├── 3. Agentic Orchestrator & Integration
-│   ├── [ ] Export trained models to backend/app/ml/ and mobile/assets/
-│   ├── [ ] Test inference scripts
-│   ├── [ ] Adaptive KB: embedding pipeline for new scam patterns
-│   └── [ ] Gemini API integration helpers (function calling schemas)
+│   ├── [x] Export trained models to backend/app/ml/ and mobile/assets/
+│   ├── [x] Test inference scripts (ml/benchmark_inference.py)
+│   ├── [x] Adaptive KB: embedding pipeline for new scam patterns
+│   └── [x] Gemini API integration helpers (function calling schemas)
 ```
 
 ### Phase 2 — Yashi (Module Services & Business Logic)

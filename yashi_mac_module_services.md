@@ -120,10 +120,15 @@ async def compute_signal_scores(session_data: dict) -> dict:
             for name, s in signals.items()}
 
 def classify_alert_level(overall_confidence: float) -> str:
-    """RED ≥ 85%, AMBER 60-84%, YELLOW < 60%"""
-    if overall_confidence >= 0.85:
+    """RED ≥ 85, AMBER 60-84, YELLOW < 60.
+
+    NOTE: scam_sessions.overall_confidence is stored on a 0–100 scale (the seed
+    data generates 85–99 for RED, 60–84 AMBER, 30–59 YELLOW), NOT 0–1. Compare
+    against 85/60, not 0.85/0.60.
+    """
+    if overall_confidence >= 85:
         return "RED"
-    elif overall_confidence >= 0.60:
+    elif overall_confidence >= 60:
         return "AMBER"
     return "YELLOW"
 ```
@@ -410,6 +415,13 @@ async def assess_upi_qr(db, upi_string: str) -> dict:
 ```
 
 ### 7.2 AI Copilot — Query Parsing
+
+> **Heads-up:** `backend/app/services/copilot.py` already exists (Sumanth, Phase 1).
+> It uses Gemini **function calling** via `run_with_tools` against a `COPILOT_TOOLS`
+> schema — a more robust design than the string-matching sketch below. Extend that
+> file (add tools / dispatch handlers) rather than replacing it with this pattern.
+> The `gemini_client` helpers it relies on (`generate`, `generate_json`,
+> `run_with_tools`) are all present.
 
 ```python
 # backend/app/services/copilot.py
