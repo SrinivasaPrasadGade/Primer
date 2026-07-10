@@ -481,4 +481,8 @@ Budget: ~5.5GB usable (macOS takes ~2.5GB)
 - [x] Panic Button: `POST /panic/trigger`
 - [x] Call Screening: `GET /screen/number/{phone}`
 - [x] API Testing: ensure all endpoints handle errors gracefully
-- [ ] Integration testing with Nivedita (Phase 4) — blocked on Nivedita's frontend (Phase 4 not started)
+- [x] Integration readiness for Nivedita: API contract aligned to the frontend/TRD
+      spec (`/note/verify` now base64 JSON; `/geo` endpoints take a single `bounds`
+      string + `type`), CORS configured, handoff reference written to
+      `backend_api_contract.md`. Live end-to-end integration testing happens once
+      Nivedita's Phase 4 frontend exists.

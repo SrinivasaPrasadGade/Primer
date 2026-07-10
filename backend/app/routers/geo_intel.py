@@ -1,13 +1,17 @@
 """Geo Intel API layer — wraps app.services.geo_intel (Yashi's PostGIS aggregation +
 Sumanth's hotspot-predictor model). Srinivas's routers handle bounds validation, auth,
 and response formatting.
+
+Bounds are passed as a single `bounds` query param ("west,south,east,north"), matching
+TRD §3.5 and Nivedita's frontend client (Mapbox `map.getBounds()` flattened) rather than
+four separate params.
 """
 
 from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,62 +22,54 @@ from app.services import geo_intel as geo_service
 router = APIRouter()
 
 
-def _bounds(west: float, south: float, east: float, north: float) -> dict:
+def parse_bounds(bounds: str = Query(..., description="'west,south,east,north' (e.g. 72.77,18.89,72.99,19.27)")) -> dict:
+    """Parse the shared bounds query param into the dict shape the service expects."""
+    parts = bounds.split(",")
+    if len(parts) != 4:
+        raise HTTPException(400, "bounds must be 'west,south,east,north'")
+    try:
+        west, south, east, north = (float(p) for p in parts)
+    except ValueError as exc:
+        raise HTTPException(400, "bounds values must be numbers") from exc
     return {"west": west, "south": south, "east": east, "north": north}
 
 
 @router.get("/heatmap")
 async def heatmap(
-    west: float = Query(...),
-    south: float = Query(...),
-    east: float = Query(...),
-    north: float = Query(...),
-    crime_type: str | None = Query(None),
+    bounds: dict = Depends(parse_bounds),
+    crime_type: str | None = Query(None, alias="type"),
     days: int = Query(7, ge=1, le=90),
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await geo_service.get_heatmap_data(db, _bounds(west, south, east, north), crime_type=crime_type, days=days)
+    return await geo_service.get_heatmap_data(db, bounds, crime_type=crime_type, days=days)
 
 
 @router.get("/incidents")
 async def incidents(
-    west: float = Query(...),
-    south: float = Query(...),
-    east: float = Query(...),
-    north: float = Query(...),
-    crime_type: str | None = Query(None),
+    bounds: dict = Depends(parse_bounds),
+    crime_type: str | None = Query(None, alias="type"),
     limit: int = Query(500, ge=1, le=2000),
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await geo_service.get_incident_pins(
-        db, _bounds(west, south, east, north), crime_type=crime_type, limit=limit
-    )
+    return await geo_service.get_incident_pins(db, bounds, crime_type=crime_type, limit=limit)
 
 
 @router.get("/predictions")
 async def predictions(
-    west: float = Query(...),
-    south: float = Query(...),
-    east: float = Query(...),
-    north: float = Query(...),
+    bounds: dict = Depends(parse_bounds),
     prediction_date: date | None = Query(None),
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await geo_service.get_stored_predictions(
-        db, _bounds(west, south, east, north), prediction_date=prediction_date
-    )
+    return await geo_service.get_stored_predictions(db, bounds, prediction_date=prediction_date)
 
 
 @router.post("/predictions/generate")
 async def generate_predictions(
-    west: float = Query(...),
-    south: float = Query(...),
-    east: float = Query(...),
-    north: float = Query(...),
-    crime_type: str | None = Query(None),
+    bounds: dict = Depends(parse_bounds),
+    crime_type: str | None = Query(None, alias="type"),
     grid_km: float = Query(2.0, gt=0, le=20),
     risk_threshold: int = Query(50, ge=0, le=100),
     user: dict = Depends(require_role("lea_officer")),
@@ -81,7 +77,7 @@ async def generate_predictions(
 ):
     return await geo_service.generate_hotspot_predictions(
         db,
-        _bounds(west, south, east, north),
+        bounds,
         crime_type=crime_type,
         grid_km=grid_km,
         risk_threshold=risk_threshold,

@@ -185,14 +185,27 @@ def test_classify_missing_session_maps_to_404(client, monkeypatch):
     assert r.status_code == 404
 
 
-def test_note_verify_rejects_empty_image(client):
+def test_note_verify_rejects_bad_base64(client):
     login_as("citizen")
-    r = client.post(
-        "/api/v1/note/verify",
-        data={"denomination": "500"},
-        files={"image": ("note.jpg", b"", "image/jpeg")},
-    )
+    r = client.post("/api/v1/note/verify", json={"image_base64": "!!!not-valid-base64!!!", "denomination": 500})
     assert r.status_code == 400
+
+
+def test_geo_heatmap_rejects_malformed_bounds(client):
+    login_as("lea_officer")
+    r = client.get("/api/v1/geo/heatmap", params={"bounds": "1,2,3"})  # only 3 of 4 values
+    assert r.status_code == 400
+
+
+def test_geo_heatmap_ok(client, monkeypatch):
+    login_as("lea_officer")
+    monkeypatch.setattr(
+        "app.services.geo_intel.get_heatmap_data",
+        _async_return([{"lng": 72.8, "lat": 19.0, "intensity": 5, "crime_type": "upi_fraud"}]),
+    )
+    r = client.get("/api/v1/geo/heatmap", params={"bounds": "72.77,18.89,72.99,19.27", "type": "upi_fraud"})
+    assert r.status_code == 200
+    assert r.json()[0]["intensity"] == 5
 
 
 def test_number_check_public_no_auth(client, monkeypatch):
