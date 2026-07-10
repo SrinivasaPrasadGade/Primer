@@ -14,8 +14,13 @@ cd backend
 source .venv/bin/activate            # or your venv
 alembic upgrade head                  # creates schema + seeds the 3 demo users
 psql "$DATABASE_URL" -f seed_data/00_extensions.sql -f seed_data/01_seed.sql
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
 ```
+
+> `--reload-dir app` scopes the file-watcher to just the `app/` source directory.
+> Without it, uvicorn also watches your `.venv/`, so every import in every installed
+> package (torch, sklearn, sqlalchemy, ...) can trigger a spurious full reload —
+> harmless, but it buries your actual request logs in noise.
 
 - **Base URL:** `http://localhost:8000`
 - **All endpoints below are under `/api/v1`** (matches your `lib/api.ts` `API_BASE + "/api/v1"`).
