@@ -459,26 +459,30 @@ Budget: ~5.5GB usable (macOS takes ~2.5GB)
 
 ### 1. FastAPI Setup & Auth
 
-- [ ] Project scaffold: FastAPI + SQLAlchemy + Alembic
-- [ ] Auth router: login + JWT + middleware + role check
-- [ ] Seed demo users (Yashi, Srinivas, Sumanth)
-- [ ] Health check + CORS + error handling
+- [x] Project scaffold: FastAPI + SQLAlchemy + Alembic
+- [x] Auth router: login + JWT + middleware + role check
+- [x] Seed demo users (Yashi, Srinivas, Sumanth)
+- [x] Health check + CORS + error handling
 
 ### 2. Core Module APIs
 
-- [ ] Scam Sentinel: `GET /scam/sessions`, `GET /scam/stats`, `POST /scam/sessions/{id}/acknowledge`
-- [ ] Scam Sentinel: WebSocket live feed (`/ws/scam/live`)
-- [ ] Note Verify: `POST /note/verify` (image upload), `GET /note/history`, `GET /note/stats`
-- [ ] Fraud Graph: `GET /graph/entity/{id}`, `POST /graph/dossier`
-- [ ] Geo Intel: `GET /geo/heatmap`, `GET /geo/predictions`
+- [x] Scam Sentinel: `GET /scam/sessions`, `GET /scam/stats`, `POST /scam/sessions/{id}/acknowledge`
+- [x] Scam Sentinel: WebSocket live feed (`/ws/scam/live`)
+- [x] Note Verify: `POST /note/verify` (image upload), `GET /note/history`, `GET /note/stats`
+- [x] Fraud Graph: `GET /graph/entity/{id}`, `POST /graph/dossier`
+- [x] Geo Intel: `GET /geo/heatmap`, `GET /geo/predictions`
 
 ### 3. Extra Feature APIs & Polish
 
-- [ ] Citizen Shield: `POST /citizen/chat`, `GET /citizen/number-check`
-- [ ] AI Copilot: `POST /copilot/query`
-- [ ] QR Scanner: `POST /qr/scan`
-- [ ] Case Summarizer: `POST /case/summarize`
-- [ ] Panic Button: `POST /panic/trigger`
-- [ ] Call Screening: `GET /screen/number/{phone}`
-- [ ] API Testing: ensure all endpoints handle errors gracefully
-- [ ] Integration testing with Nivedita (Phase 4)
+- [x] Citizen Shield: `POST /citizen/chat`, `GET /citizen/number-check`
+- [x] AI Copilot: `POST /copilot/query`
+- [x] QR Scanner: `POST /qr/scan`
+- [x] Case Summarizer: `POST /case/summarize`
+- [x] Panic Button: `POST /panic/trigger`
+- [x] Call Screening: `GET /screen/number/{phone}`
+- [x] API Testing: ensure all endpoints handle errors gracefully
+- [x] Integration readiness for Nivedita: API contract aligned to the frontend/TRD
+      spec (`/note/verify` now base64 JSON; `/geo` endpoints take a single `bounds`
+      string + `type`), CORS configured, handoff reference written to
+      `backend_api_contract.md`. Live end-to-end integration testing happens once
+      Nivedita's Phase 4 frontend exists.
