@@ -1,5 +1,8 @@
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.auth.router import router as auth_router
@@ -41,6 +44,22 @@ app.include_router(case_summary_router, prefix="/api/v1/case", tags=["Case Summa
 app.include_router(panic_router, prefix="/api/v1/panic", tags=["Panic Button"])
 app.include_router(call_screen_router, prefix="/api/v1/screen", tags=["Call Screening"])
 app.include_router(correlation_router, prefix="/api/v1/correlation", tags=["Cross-Module Correlation"])
+
+logger = logging.getLogger("primer")
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+    """Services raise ValueError for bad/missing resources (e.g. an unknown session or
+    cluster id); surface those as a clean 400 rather than an unhandled 500."""
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Last-resort safety net: log the traceback server-side, never leak it to clients."""
+    logger.exception("Unhandled error handling %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 @app.get("/health")
