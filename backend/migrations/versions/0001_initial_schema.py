@@ -107,11 +107,11 @@ CREATE TABLE core.audit_log (
 
 CREATE INDEX idx_audit_timestamp ON core.audit_log (timestamp DESC);
 
--- Seed demo users
+-- Seed demo users (password for all three: "Primer@2026" — see README)
 INSERT INTO core.users (email, name, role, designation, jurisdiction, password_hash) VALUES
-    ('yashi@primer.demo', 'Yashi', 'lea_officer', 'Inspector, Cyber Cell', 'Mumbai Suburban', '$2b$12$demo_hash_yashi'),
-    ('srinivas@primer.demo', 'Srinivas', 'bank_manager', 'Branch Manager, SBI', 'Andheri West', '$2b$12$demo_hash_srinivas'),
-    ('sumanth@primer.demo', 'Sumanth', 'citizen', 'Citizen', NULL, '$2b$12$demo_hash_sumanth');
+    ('yashi@primer.demo', 'Yashi', 'lea_officer', 'Inspector, Cyber Cell', 'Mumbai Suburban', '$2b$12$bCkzPbE9K9OjikpAT3Kzde03m8xpVeQ1NpK3k6Ewmwuv7DqLT0T7O'),
+    ('srinivas@primer.demo', 'Srinivas', 'bank_manager', 'Branch Manager, SBI', 'Andheri West', '$2b$12$mbTtMKweslk.4xrUFrqcEu2Cnv00qUDDRkAe4IU5HqA.IYXKHTQNe'),
+    ('sumanth@primer.demo', 'Sumanth', 'citizen', 'Citizen', NULL, '$2b$12$vsLv809.lvAc46JpXzgTMuOlQu0kVUdaxqtZ7RhbGoYXY8tn2yD5a');
 
 -- ============================================================
 -- scam_sentinel
