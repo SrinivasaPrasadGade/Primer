@@ -1,3 +1,7 @@
+import { AuthProvider } from "@/hooks/useAuth";
+import { AppShell } from "@/components/layout/AppShell";
+import "@/styles/globals.css";
+
 export const metadata = {
   title: "Primer Dashboard",
   description: "Primer — AI-Powered Digital Public Safety Intelligence Platform",
@@ -6,7 +10,11 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

@@ -39,6 +39,7 @@ yarn-debug.log*
 yarn-error.log*
 .next/
 out/
+*.tsbuildinfo
 
 # Mobile (React Native / Expo)
 .expo/
