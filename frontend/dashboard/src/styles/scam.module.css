@@ -1,0 +1,157 @@
+.filterBar {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+}
+.filterButton {
+    background: var(--color-layer-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-full);
+    padding: var(--space-2) var(--space-4);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.filterButtonActive {
+    background: var(--accent-500);
+    border-color: var(--accent-500);
+    color: white;
+}
+
+.sessionGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-4);
+}
+
+.sessionCard {
+    background: var(--color-layer-1);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+.sessionCard.red { border-color: var(--color-red-border); }
+.sessionCard.amber { border-color: rgba(245, 158, 11, 0.2); }
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+.scamType {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    flex: 1;
+}
+.cardBody {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+.phoneRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+.arrow {
+    color: var(--color-text-tertiary);
+}
+.cardFooter {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+    font-family: var(--font-mono);
+}
+
+.explainableAI {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+.signalRow {
+    background: var(--color-layer-2);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+}
+.signalHeader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+    font-size: 13px;
+    font-weight: 600;
+}
+.signalScore {
+    font-family: var(--font-mono);
+}
+.signalBar {
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--color-layer-3);
+    overflow: hidden;
+    margin-bottom: var(--space-2);
+}
+.signalFill {
+    height: 100%;
+}
+.signalExplanation {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.sectionTitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.detailGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-6);
+}
+@media (max-width: 900px) {
+    .detailGrid { grid-template-columns: 1fr; }
+}
+
+.detailHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.actionRow {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+}
+.actionButton {
+    background: var(--color-layer-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    color: var(--color-text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.actionButton:hover {
+    background: var(--color-layer-3);
+}
+.actionButtonPrimary {
+    background: var(--accent-500);
+    border-color: var(--accent-500);
+}
+.actionButtonPrimary:hover {
+    background: var(--accent-600);
+}
