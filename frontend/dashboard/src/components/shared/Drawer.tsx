@@ -1,7 +1,6 @@
 "use client";
 import { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import styles from "./shared.module.css";
 
 export function Drawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
     return (
@@ -9,14 +8,14 @@ export function Drawer({ open, onClose, children }: { open: boolean; onClose: ()
             {open && (
                 <>
                     <motion.div
-                        className={styles.drawerBackdrop}
+                        className="drawer-backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
                     />
                     <motion.div
-                        className={styles.drawer}
+                        className="drawer"
                         initial={{ x: "100%" }}
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}

@@ -1,0 +1,251 @@
+.statGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.statCard {
+    background: var(--color-layer-1);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+.tone-red { border-color: var(--color-red-border); box-shadow: var(--shadow-red); }
+.tone-amber { border-color: rgba(245, 158, 11, 0.2); }
+.tone-green { border-color: rgba(34, 197, 94, 0.2); }
+
+.statHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--color-text-secondary);
+}
+.statLabel {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.statValue {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+}
+
+.sectionTitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.dashboardGrid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: var(--space-6);
+}
+@media (max-width: 960px) {
+    .dashboardGrid { grid-template-columns: 1fr; }
+}
+
+.threatLevel, .alertFeed {
+    background: var(--color-layer-1);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.threatHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.threatBadge {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.badge-red { color: var(--color-red); background: var(--color-red-bg); }
+.badge-amber { color: var(--color-amber); background: var(--color-amber-bg); }
+.badge-green { color: var(--color-green); background: var(--color-green-bg); }
+
+.threatBar {
+    display: flex;
+    height: 10px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    background: var(--color-layer-3);
+}
+.threatSegmentRed { background: var(--color-red); }
+.threatSegmentAmber { background: var(--color-amber); }
+.threatSegmentYellow { background: #EAB308; }
+
+.threatLegend {
+    display: flex;
+    gap: var(--space-4);
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    font-family: var(--font-mono);
+}
+
+.alertList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-height: 360px;
+    overflow-y: auto;
+}
+.alertRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-layer-2);
+}
+.alertRow:hover {
+    background: var(--color-layer-3);
+}
+.alertPhone {
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+.alertType {
+    flex: 1;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+}
+.alertConfidence {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+}
+.emptyState {
+    color: var(--color-text-tertiary);
+    font-size: 13px;
+    text-align: center;
+    padding: var(--space-6) 0;
+}
+
+/* ─── Note Verify (no dedicated module in doc §3) ─── */
+.notesGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-6);
+}
+@media (max-width: 900px) {
+    .notesGrid { grid-template-columns: 1fr; }
+}
+.notesUpload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+}
+.notesUploadPlaceholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    width: 100%;
+    height: 220px;
+    border: 1px dashed var(--color-border-default);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-tertiary);
+    font-size: 13px;
+}
+.notesUploadPreview {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+}
+.notesUploadButton {
+    background: var(--accent-500);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-6);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.notesUploadButton:hover { background: var(--accent-600); }
+.notesUploadButton:disabled { opacity: 0.6; cursor: not-allowed; }
+.notesError { color: var(--color-red); font-size: 12px; }
+.notesVerdict { font-size: 22px; font-weight: 700; margin-bottom: var(--space-2); }
+.verdictGenuine { color: var(--color-green); }
+.verdictSuspect { color: var(--color-amber); }
+.verdictCounterfeit { color: var(--color-red); }
+.notesFeatureRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+    font-size: 13px;
+    text-transform: capitalize;
+}
+.notesHistoryRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-layer-2);
+    font-size: 12px;
+}
+.notesHistoryRow + .notesHistoryRow { margin-top: var(--space-2); }
+
+/* ─── Case Summarizer (no dedicated module in doc §3) ─── */
+.caseForm {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+}
+.caseSelect, .caseInput {
+    background: var(--color-layer-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    color: var(--color-text-primary);
+    font-size: 13px;
+}
+.caseInput { flex: 1; }
+.caseSubmit {
+    background: var(--accent-500);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-6);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.caseSubmit:disabled { opacity: 0.6; cursor: not-allowed; }
+.caseSummaryText { font-size: 14px; line-height: 1.6; margin-bottom: var(--space-6); }
+.caseSection { margin-bottom: var(--space-6); }
+.caseSectionTitle {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-3);
+}
+.caseTimelineRow, .caseSuspectRow {
+    display: flex;
+    gap: var(--space-3);
+    font-size: 13px;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+}

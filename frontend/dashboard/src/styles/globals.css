@@ -27,6 +27,7 @@
     --color-red-border: rgba(239, 68, 68, 0.20);
     --color-amber: #F59E0B;
     --color-amber-bg: rgba(245, 158, 11, 0.08);
+    --color-yellow: #EAB308;
     --color-green: #22C55E;
     --color-green-bg: rgba(34, 197, 94, 0.08);
 
@@ -59,9 +60,7 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html, body {
-    height: 100%;
-}
+html, body { height: 100%; }
 
 body {
     background: var(--color-bg-primary);
@@ -72,11 +71,181 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-a {
-    color: inherit;
-    text-decoration: none;
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; }
+
+*:focus-visible {
+    outline: 2px solid var(--accent-500);
+    outline-offset: 2px;
 }
 
-button {
-    font-family: inherit;
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+    }
 }
+
+/* ─── Global shared component classes (UI/UX §5) ─── */
+
+.card {
+    background: var(--color-layer-1);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), var(--shadow-sm);
+    transition: transform 200ms var(--ease-smooth), box-shadow 200ms;
+}
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+.card.red {
+    background: var(--color-red-bg);
+    border-color: var(--color-red-border);
+    animation: redPulse 4s ease-in-out infinite;
+}
+@keyframes redPulse {
+    0%, 100% { box-shadow: var(--shadow-sm), 0 0 0 0 rgba(239,68,68,0); }
+    50%      { box-shadow: var(--shadow-sm), 0 0 24px -4px rgba(239,68,68,0.2); }
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+.badge.red { color: #FCA5A5; background: var(--color-red-bg); border: 1px solid var(--color-red-border); }
+.badge.amber { color: var(--color-amber); background: var(--color-amber-bg); border: 1px solid rgba(245, 158, 11, 0.2); }
+.badge.yellow { color: var(--color-yellow); background: var(--color-amber-bg); border: 1px solid rgba(245, 158, 11, 0.2); }
+.badge.green { color: var(--color-green); background: var(--color-green-bg); border: 1px solid rgba(34, 197, 94, 0.2); }
+.badge .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: currentColor;
+    animation: dotPulse 2s ease-in-out infinite;
+}
+@keyframes dotPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.confidence-bar {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+}
+.confidence-bar .fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent-500), var(--accent-600));
+    transition: width 800ms var(--ease-smooth);
+}
+
+.drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    z-index: 40;
+}
+.drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(480px, 100vw);
+    background: var(--color-layer-1);
+    border-left: 1px solid var(--color-border-default);
+    box-shadow: var(--shadow-lg);
+    z-index: 41;
+    overflow-y: auto;
+    padding: var(--space-6);
+}
+
+.skeleton {
+    border-radius: var(--radius-sm);
+    background: linear-gradient(90deg, var(--color-layer-2) 25%, var(--color-layer-3) 37%, var(--color-layer-2) 63%);
+    background-size: 400% 100%;
+    animation: skeleton-loading 1.4s ease infinite;
+}
+@keyframes skeleton-loading {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+}
+
+/* ─── Login page (no dedicated module in doc §3) ─── */
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 0%, var(--color-layer-2), var(--color-bg-primary));
+}
+.login-card {
+    width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    background: var(--color-layer-1);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-lg);
+}
+.login-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 20px;
+    font-weight: 700;
+}
+.login-subtitle {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    margin-bottom: var(--space-4);
+}
+.login-label {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-top: var(--space-2);
+}
+.login-input {
+    background: var(--color-layer-2);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    color: var(--color-text-primary);
+    font-size: 13px;
+}
+.login-input:focus {
+    outline: none;
+    border-color: var(--accent-500);
+}
+.login-error {
+    color: var(--color-red);
+    font-size: 12px;
+    margin-top: var(--space-2);
+}
+.login-submit {
+    margin-top: var(--space-6);
+    background: var(--accent-500);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.login-submit:hover { background: var(--accent-600); }
+.login-submit:disabled { opacity: 0.6; cursor: not-allowed; }

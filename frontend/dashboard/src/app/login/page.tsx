@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { ShieldAlert } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiError } from "@/lib/api";
-import styles from "./login.module.css";
 
 export default function LoginPage() {
     const { login } = useAuth();
@@ -29,20 +28,20 @@ export default function LoginPage() {
     }
 
     return (
-        <div className={styles.page}>
-            <form className={styles.card} onSubmit={handleSubmit}>
-                <div className={styles.brand}>
+        <div className="login-page">
+            <form className="login-card" onSubmit={handleSubmit}>
+                <div className="login-brand">
                     <ShieldAlert size={28} color="var(--accent-500)" />
                     <span>Primer</span>
                 </div>
-                <p className={styles.subtitle}>Digital Public Safety Intelligence Platform</p>
+                <p className="login-subtitle">Digital Public Safety Intelligence Platform</p>
 
-                <label className={styles.label} htmlFor="email">
+                <label className="login-label" htmlFor="email">
                     Email
                 </label>
                 <input
                     id="email"
-                    className={styles.input}
+                    className="login-input"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -51,12 +50,12 @@ export default function LoginPage() {
                     autoFocus
                 />
 
-                <label className={styles.label} htmlFor="password">
+                <label className="login-label" htmlFor="password">
                     Password
                 </label>
                 <input
                     id="password"
-                    className={styles.input}
+                    className="login-input"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -64,9 +63,9 @@ export default function LoginPage() {
                     required
                 />
 
-                {error && <p className={styles.error}>{error}</p>}
+                {error && <p className="login-error">{error}</p>}
 
-                <button className={styles.submit} type="submit" disabled={submitting}>
+                <button className="login-submit" type="submit" disabled={submitting}>
                     {submitting ? "Signing in…" : "Sign in"}
                 </button>
             </form>

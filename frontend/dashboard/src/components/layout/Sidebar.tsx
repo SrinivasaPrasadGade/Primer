@@ -2,7 +2,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, PhoneCall, Landmark, Share2, Map, MessageSquareText, FileSearch } from "lucide-react";
-import styles from "./layout.module.css";
+import { useAuth } from "@/hooks/useAuth";
+import styles from "@/styles/layout.module.css";
 
 const NAV_ITEMS = [
     { href: "/", label: "Dashboard", icon: Home },
@@ -16,6 +17,9 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const { user } = useAuth();
+
+    if (!user) return null;
 
     return (
         <nav className={styles.sidebar}>

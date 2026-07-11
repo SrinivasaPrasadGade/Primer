@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import styles from "./layout.module.css";
+import styles from "@/styles/layout.module.css";
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
     return (

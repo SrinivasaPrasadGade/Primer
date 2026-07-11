@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
-import styles from "./shared.module.css";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-    return <div className={`${styles.card} ${className}`}>{children}</div>;
+    return <div className={`card ${className}`}>{children}</div>;
 }

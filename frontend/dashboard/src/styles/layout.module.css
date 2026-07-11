@@ -24,8 +24,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 var(--space-6);
-    background: rgba(17, 17, 24, 0.8);
-    backdrop-filter: blur(12px);
+    background: rgba(10, 10, 15, 0.85);
+    backdrop-filter: blur(24px) saturate(1.8) brightness(0.92);
     border-bottom: 1px solid var(--color-border-subtle);
     position: sticky;
     top: 0;
@@ -47,6 +47,7 @@
 }
 
 .iconButton {
+    position: relative;
     background: transparent;
     border: none;
     color: var(--color-text-secondary);
@@ -59,6 +60,23 @@
 .iconButton:hover {
     background: var(--color-layer-2);
     color: var(--color-text-primary);
+}
+
+.notificationDot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    border-radius: var(--radius-full);
+    background: var(--color-red);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .userMenu {
