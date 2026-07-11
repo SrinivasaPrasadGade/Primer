@@ -1,9 +1,19 @@
 "use client";
 import { motion } from "framer-motion";
+import styles from "@/styles/scam.module.css";
 import { Badge } from "../shared/Badge";
 import { ConfidenceBar } from "../shared/ConfidenceBar";
-import styles from "@/styles/scam.module.css";
-import { ScamSession } from "@/lib/api";
+
+interface Session {
+    id: string;
+    caller_number: string;
+    callee_number: string;
+    alert_level: "RED" | "AMBER" | "YELLOW";
+    overall_confidence: number;
+    scam_type: string;
+    call_duration_sec: number;
+    deepfake_detected: boolean;
+}
 
 function formatDuration(seconds: number) {
     const m = Math.floor(seconds / 60);
@@ -11,15 +21,14 @@ function formatDuration(seconds: number) {
     return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function SessionCard({ session, onClick }: { session: ScamSession; onClick: () => void }) {
-    const isRed = session.alert_level === "RED";
+export function SessionCard({ session, onClick }: { session: Session; onClick: () => void }) {
     return (
         <motion.div
             className={`${styles.sessionCard} ${styles[session.alert_level.toLowerCase()]}`}
             onClick={onClick}
             initial={{ opacity: 0, y: -20 }}
-            animate={isRed ? { opacity: 1, y: 0, boxShadow: ["0 0 0 rgba(239,68,68,0)", "0 0 24px rgba(239,68,68,0.35)", "0 0 0 rgba(239,68,68,0)"] } : { opacity: 1, y: 0 }}
-            transition={isRed ? { duration: 2, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4, ease: [0.23, 1.0, 0.32, 1.0] }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.23, 1.0, 0.32, 1.0] }}
             whileHover={{ y: -2 }}
         >
             <div className={styles.cardHeader}>

@@ -3,12 +3,20 @@ import { motion } from "framer-motion";
 import styles from "@/styles/scam.module.css";
 import { SignalScore } from "@/lib/api";
 
-const SIGNAL_NAMES: Record<string, string> = {
+const signalNames: Record<string, string> = {
     call_flow_match: "Call Flow Match",
     number_spoofing: "Number Spoofing",
     script_similarity: "Script Similarity",
     voice_synthetic: "Deepfake Voice",
     urgency_phrases: "Urgency Phrases",
+};
+
+const signalIcons: Record<string, string> = {
+    call_flow_match: "✔",
+    number_spoofing: "✔",
+    script_similarity: "✔",
+    voice_synthetic: "⚠️",
+    urgency_phrases: "✔",
 };
 
 export function SignalBar({ signalKey, signal, index }: { signalKey: string; signal: SignalScore; index: number }) {
@@ -20,7 +28,8 @@ export function SignalBar({ signalKey, signal, index }: { signalKey: string; sig
             transition={{ delay: index * 0.06, duration: 0.4 }}
         >
             <div className={styles.signalHeader}>
-                <span className={styles.signalName}>{SIGNAL_NAMES[signalKey] ?? signalKey}</span>
+                <span className={styles.signalIcon}>{signal.score >= 0.7 ? signalIcons[signalKey] : "⚠️"}</span>
+                <span className={styles.signalName}>{signalNames[signalKey] ?? signalKey}</span>
                 <span className={styles.signalScore}>{(signal.score * 100).toFixed(0)}%</span>
             </div>
             <div className={styles.signalBar}>
