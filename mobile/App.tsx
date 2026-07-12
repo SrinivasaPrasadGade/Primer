@@ -2,7 +2,7 @@ import { DarkTheme, NavigationContainer, NavigatorScreenParams, Theme } from "@r
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
-import { Home, MessageCircle, QrCode, ScanLine } from "lucide-react-native";
+import { Home, MessageCircle, QrCode, ScanLine, User } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "./constants/colors";
@@ -12,6 +12,7 @@ import { HomeScreen } from "./screens/HomeScreen";
 import { NoteScannerScreen } from "./screens/NoteScannerScreen";
 import { NumberCheckScreen } from "./screens/NumberCheckScreen";
 import { PanicScreen } from "./screens/PanicScreen";
+import { ProfileScreen } from "./screens/ProfileScreen";
 import { QRResultScreen } from "./screens/QRResultScreen";
 import { QRScannerScreen } from "./screens/QRScannerScreen";
 import { ScanResultScreen } from "./screens/ScanResultScreen";
@@ -31,6 +32,7 @@ export type TabParamList = {
     Home: NavigatorScreenParams<HomeStackParamList>;
     Scan: NavigatorScreenParams<ScanStackParamList>;
     Chat: undefined;
+    Profile: undefined;
 };
 export type RootStackParamList = {
     MainTabs: NavigatorScreenParams<TabParamList>;
@@ -100,7 +102,7 @@ function TabNavigator() {
         <Tab.Navigator
             screenOptions={{
                 headerShown: false,
-                tabBarStyle: { backgroundColor: colors.layer1, borderTopColor: colors.borderSubtle },
+                tabBarStyle: { backgroundColor: colors.bgPrimary, borderTopColor: colors.borderSubtle },
                 tabBarActiveTintColor: colors.accent500,
                 tabBarInactiveTintColor: colors.textTertiary,
             }}
@@ -115,6 +117,16 @@ function TabNavigator() {
                     title: "AI Assistant",
                     ...stackScreenOptions,
                     tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} />,
+                }}
+            />
+            <Tab.Screen
+                name="Profile"
+                component={ProfileScreen}
+                options={{
+                    headerShown: true,
+                    title: "Profile",
+                    ...stackScreenOptions,
+                    tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
                 }}
             />
         </Tab.Navigator>
