@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "./constants/colors";
 import { api, ApiError, NoteVerifyResult, QRScanResult } from "./hooks/useApi";
+import { CallScreeningScreen } from "./screens/CallScreeningScreen";
 import { ChatScreen } from "./screens/ChatScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { NoteScannerScreen } from "./screens/NoteScannerScreen";
@@ -37,6 +38,7 @@ export type TabParamList = {
 export type RootStackParamList = {
     MainTabs: NavigatorScreenParams<TabParamList>;
     Panic: undefined;
+    CallScreening: { callerNumber?: string } | undefined;
 };
 
 declare global {
@@ -189,6 +191,11 @@ export default function App() {
             <RootStack.Navigator screenOptions={{ headerShown: false }}>
                 <RootStack.Screen name="MainTabs" component={TabNavigator} />
                 <RootStack.Screen name="Panic" component={PanicScreen} options={{ presentation: "modal" }} />
+                <RootStack.Screen
+                    name="CallScreening"
+                    component={CallScreeningScreen}
+                    options={{ presentation: "transparentModal", animation: "fade" }}
+                />
             </RootStack.Navigator>
         </NavigationContainer>
     );

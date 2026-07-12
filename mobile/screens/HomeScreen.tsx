@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { AlertTriangle, MessageCircle, PhoneCall, QrCode, ScanLine } from "lucide-react-native";
+import { AlertTriangle, MessageCircle, PhoneCall, PhoneIncoming, QrCode, ScanLine } from "lucide-react-native";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { FeatureGrid } from "../components/FeatureGrid";
 import { colors, spacing } from "../constants/colors";
@@ -34,6 +34,12 @@ export function HomeScreen() {
                         label: "Check Phone Number",
                         icon: PhoneCall,
                         onPress: () => navigation.navigate("NumberCheck"),
+                    },
+                    {
+                        key: "screen-call",
+                        label: "Screen a Call",
+                        icon: PhoneIncoming,
+                        onPress: () => navigation.navigate("CallScreening", { callerNumber: "+91 98765 43210" }),
                     },
                     {
                         key: "chat",
