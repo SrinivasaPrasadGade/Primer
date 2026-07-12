@@ -92,6 +92,17 @@ class ApiClient {
         location?: { lat: number; lng: number };
         emergency_contact_number?: string;
     }) => this.post<PanicResult>("/panic/trigger", payload);
+
+    me = () => this.get<AuthUser>("/auth/me");
+}
+
+export interface AuthUser {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    designation?: string;
+    jurisdiction?: string;
 }
 
 export interface NoteVerifyResult {

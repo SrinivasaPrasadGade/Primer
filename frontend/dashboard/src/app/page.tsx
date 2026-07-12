@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ThreatLevel } from "@/components/dashboard/ThreatLevel";
 import { LiveAlertFeed } from "@/components/dashboard/LiveAlertFeed";
+import { MiniMap } from "@/components/dashboard/MiniMap";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
@@ -47,7 +48,10 @@ export default function HomeDashboard() {
                 ) : (
                     <LiveAlertFeed sessions={sessions ?? []} />
                 )}
-                <ThreatLevel redCount={redCount} amberCount={amberCount} yellowCount={yellowCount} />
+                <div className={styles.rightRail}>
+                    <ThreatLevel redCount={redCount} amberCount={amberCount} yellowCount={yellowCount} />
+                    <MiniMap />
+                </div>
             </div>
         </>
     );

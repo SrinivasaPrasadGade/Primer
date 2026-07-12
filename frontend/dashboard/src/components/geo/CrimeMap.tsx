@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { GeoIncident, HeatmapCell, HotspotPrediction } from "@/lib/api";
@@ -19,12 +19,18 @@ export function CrimeMap({
     predictions,
     onBoundsChange,
     onIncidentClick,
+    style,
+    interactive = true,
+    zoom = 11,
 }: {
     heatmap: HeatmapCell[];
     incidents: GeoIncident[];
     predictions: HotspotPrediction[];
     onBoundsChange: (bounds: string) => void;
     onIncidentClick: (incident: GeoIncident) => void;
+    style?: CSSProperties;
+    interactive?: boolean;
+    zoom?: number;
 }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -38,7 +44,8 @@ export function CrimeMap({
             container: containerRef.current,
             style: "mapbox://styles/mapbox/dark-v11",
             center: MUMBAI_CENTER,
-            zoom: 11,
+            zoom,
+            interactive,
         });
         mapRef.current = m;
 
@@ -123,7 +130,7 @@ export function CrimeMap({
 
     return (
         <>
-            <div ref={containerRef} className={styles.map} />
+            <div ref={containerRef} className={styles.map} style={style} />
             <HeatmapLayer map={map} data={heatmap} />
         </>
     );
