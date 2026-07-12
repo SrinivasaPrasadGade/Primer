@@ -25,7 +25,7 @@ export default function ScamLiveMonitor() {
     const [filter, setFilter] = useState<(typeof FILTERS)[number]>("ALL");
     const key = `scam-sessions-${filter}`;
 
-    const { data: sessions, isLoading } = useApi(key, () =>
+    const { data: sessions, isLoading, error } = useApi(key, () =>
         api.getScamSessions(filter === "ALL" ? { limit: 50 } : { alert_level: filter, limit: 50 })
     );
     const { messages, isConnected } = useWebSocket<LiveEvent>(WS_SCAM_LIVE);
@@ -54,13 +54,25 @@ export default function ScamLiveMonitor() {
                 ))}
             </div>
 
-            <div className={styles.sessionGrid}>
-                {isLoading
-                    ? Array.from({ length: 6 }).map((_, i) => <LoadingSkeleton key={i} height={140} />)
-                    : (sessions ?? []).map((session) => (
-                          <SessionCard key={session.id} session={session} onClick={() => router.push(`/scam/${session.id}`)} />
-                      ))}
-            </div>
+            {error ? (
+                <p style={{ color: "var(--color-text-tertiary)", fontSize: 13, padding: "24px 0" }}>
+                    Couldn&apos;t load sessions — {error instanceof Error ? error.message : "please retry"}.
+                </p>
+            ) : (
+                <div className={styles.sessionGrid}>
+                    {isLoading ? (
+                        Array.from({ length: 6 }).map((_, i) => <LoadingSkeleton key={i} height={140} />)
+                    ) : (sessions ?? []).length === 0 ? (
+                        <p style={{ color: "var(--color-text-tertiary)", fontSize: 13, padding: "24px 0" }}>
+                            No sessions match this filter yet.
+                        </p>
+                    ) : (
+                        (sessions ?? []).map((session) => (
+                            <SessionCard key={session.id} session={session} onClick={() => router.push(`/scam/${session.id}`)} />
+                        ))
+                    )}
+                </div>
+            )}
         </>
     );
 }
