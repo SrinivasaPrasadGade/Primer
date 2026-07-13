@@ -6,8 +6,53 @@ import { EntityPanel } from "@/components/graph/EntityPanel";
 import { CopilotBar } from "@/components/graph/CopilotBar";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useApi } from "@/hooks/useApi";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { api, GraphSearchResult, MoneyFlowEdge } from "@/lib/api";
 import styles from "@/styles/graph.module.css";
+
+function formatAmount(n: number): string {
+    return "₹" + Math.round(n).toLocaleString("en-IN");
+}
+
+function MoneyFlowPanel({ flow }: { flow: MoneyFlowEdge[] }) {
+    if (flow.length === 0) {
+        return <p className={styles.flowEmpty}>No money-flow transfers traced from this entity.</p>;
+    }
+    const outflow = flow.filter((e) => e.direction === "outflow");
+    const inflow = flow.filter((e) => e.direction === "inflow");
+    const totalOut = outflow.reduce((s, e) => s + e.amount, 0);
+    const totalIn = inflow.reduce((s, e) => s + e.amount, 0);
+
+    return (
+        <div className={styles.flowPanel}>
+            <div className={styles.flowSummary}>
+                <div className={styles.flowStat}>
+                    <span className={styles.flowOutLabel}>Out</span>
+                    <span>{formatAmount(totalOut)}</span>
+                </div>
+                <div className={styles.flowStat}>
+                    <span className={styles.flowInLabel}>In</span>
+                    <span>{formatAmount(totalIn)}</span>
+                </div>
+            </div>
+            {flow.map((edge) => {
+                const out = edge.direction === "outflow";
+                return (
+                    <div key={edge.id} className={styles.flowRow}>
+                        <span className={out ? styles.flowIconOut : styles.flowIconIn}>
+                            {out ? <ArrowUpRight size={14} /> : <ArrowDownLeft size={14} />}
+                        </span>
+                        <span className={styles.flowPath}>
+                            {edge.from_entity} → {edge.to_entity}
+                        </span>
+                        <span className={styles.flowHop}>hop {edge.hop}</span>
+                        <span className={styles.flowAmount}>{formatAmount(edge.amount)}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
 
 export default function FraudGraphExplorer() {
     const [query, setQuery] = useState("");
@@ -96,19 +141,13 @@ export default function FraudGraphExplorer() {
                         <GraphCanvas data={graphData} onNodeClick={setSelectedNodeId} />
                     )}
 
-                    <CopilotBar />
+                    <CopilotBar context={selectedNode?.entity_value ?? selectedNode?.display_label ?? null} />
                 </div>
 
                 <div>
                     <EntityPanel node={selectedNode} onViewMoneyFlow={handleViewMoneyFlow} />
-                    {moneyFlow && moneyFlow.length > 0 && (
-                        <div style={{ marginTop: 16 }}>
-                            {moneyFlow.map((edge) => (
-                                <div key={edge.id} style={{ fontSize: 12, padding: "8px 0", borderBottom: "1px solid var(--color-border-subtle)" }}>
-                                    {edge.from_entity} → {edge.to_entity} · ₹{edge.amount}
-                                </div>
-                            ))}
-                        </div>
+                    {moneyFlow && (
+                        <MoneyFlowPanel flow={moneyFlow} />
                     )}
                 </div>
             </div>

@@ -1,7 +1,5 @@
 import { AuthProvider } from "@/hooks/useAuth";
-import { Navbar } from "@/components/layout/Navbar";
-import { Sidebar } from "@/components/layout/Sidebar";
-import styles from "@/styles/layout.module.css";
+import { AppShell } from "@/components/layout/AppShell";
 import "@/styles/globals.css";
 
 export const metadata = {
@@ -14,13 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <AuthProvider>
-          <div className={styles.shell}>
-            <Navbar />
-            <div className={styles.shellBody}>
-              <Sidebar />
-              <main className={styles.main}>{children}</main>
-            </div>
-          </div>
+          <AppShell>{children}</AppShell>
         </AuthProvider>
       </body>
     </html>

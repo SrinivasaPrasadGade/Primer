@@ -35,7 +35,7 @@ export function ChatInterface() {
                 {messages.map((m, i) => (
                     <ChatMessage key={i} message={m} />
                 ))}
-                {loading && <ChatMessage message={{ role: "assistant", text: "Thinking…" }} />}
+                {loading && <ChatMessage message={{ role: "assistant", text: "", pending: true }} />}
             </div>
             <form className={styles.inputBar} onSubmit={handleSubmit}>
                 <input

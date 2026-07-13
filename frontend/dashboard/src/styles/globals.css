@@ -17,9 +17,11 @@
     --color-border-subtle: rgba(255, 255, 255, 0.06);
     --color-border-default: rgba(255, 255, 255, 0.10);
 
-    /* Accent */
-    --accent-500: #3B82F6;
-    --accent-600: #2563EB;
+    /* Accent — Claude's signature warm clay/coral (design system, #13) */
+    --accent-500: #D97757;
+    --accent-600: #C15F3C;
+    --accent-tint: rgba(217, 119, 87, 0.12);
+    --accent-tint-strong: rgba(217, 119, 87, 0.22);
 
     /* Alerts */
     --color-red: #EF4444;
@@ -33,6 +35,7 @@
 
     /* Typography */
     --font-display: "Inter", -apple-system, sans-serif;
+    --font-serif: "Georgia", "Times New Roman", ui-serif, serif; /* Claude editorial headings */
     --font-mono: "JetBrains Mono", monospace;
 
     /* Spacing */

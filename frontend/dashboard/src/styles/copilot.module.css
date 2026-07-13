@@ -5,6 +5,7 @@
     background: var(--color-layer-1);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-lg);
+    overflow: hidden;
 }
 
 .messages {
@@ -13,47 +14,149 @@
     padding: var(--space-6);
     display: flex;
     flex-direction: column;
+    gap: var(--space-6);
+}
+
+/* ─── Message row: avatar + bubble ─── */
+.row {
+    display: flex;
     gap: var(--space-3);
+    max-width: 780px;
+    width: 100%;
 }
-
-.message {
-    max-width: 70%;
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-lg);
-    font-size: 13px;
-    line-height: 1.5;
-}
-.messageAssistant {
+.rowAssistant {
     align-self: flex-start;
-    background: var(--color-layer-2);
-    color: var(--color-text-primary);
 }
-.messageUser {
+.rowUser {
     align-self: flex-end;
-    background: var(--accent-500);
-    color: white;
+    flex-direction: row-reverse;
+    margin-left: auto;
 }
 
+.avatar {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.avatarAssistant {
+    background: var(--accent-tint);
+    color: var(--accent-500);
+    border: 1px solid var(--accent-tint-strong);
+}
+.avatarUser {
+    background: var(--color-layer-3);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-default);
+}
+
+.bubbleWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.rowUser .bubbleWrap {
+    align-items: flex-end;
+}
+
+.roleLabel {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--color-text-tertiary);
+    padding: 0 var(--space-1);
+}
+
+.bubble {
+    padding: var(--space-3) var(--space-4);
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.6;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+.bubbleAssistant {
+    background: var(--color-layer-2);
+    border: 1px solid var(--color-border-subtle);
+    color: var(--color-text-primary);
+    border-top-left-radius: 4px;
+}
+.bubbleUser {
+    background: var(--accent-500);
+    color: #fff;
+    border-top-right-radius: 4px;
+}
+.bubblePending {
+    padding: var(--space-4);
+}
+
+.msgParagraph {
+    margin: 0;
+}
+.msgParagraph + .msgParagraph {
+    margin-top: var(--space-3);
+}
+.msgList {
+    margin: var(--space-2) 0 0;
+    padding-left: 1.1em;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.msgList li {
+    margin: 0;
+}
+
+/* ─── Typing indicator ─── */
+.typing {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+}
+.typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-text-tertiary);
+    animation: typingBounce 1.2s ease-in-out infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.15s; }
+.typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ─── Composer ─── */
 .inputBar {
     display: flex;
     gap: var(--space-3);
     padding: var(--space-4);
     border-top: 1px solid var(--color-border-subtle);
+    background: var(--color-layer-1);
 }
 .input {
     flex: 1;
     background: var(--color-layer-2);
     border: 1px solid var(--color-border-default);
     border-radius: var(--radius-md);
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-4);
     color: var(--color-text-primary);
-    font-size: 13px;
+    font-size: 14px;
+}
+.input:focus {
+    outline: none;
+    border-color: var(--accent-500);
 }
 .sendButton {
     background: var(--accent-500);
     border: none;
     border-radius: var(--radius-md);
-    padding: var(--space-3);
+    padding: 0 var(--space-4);
     color: white;
     cursor: pointer;
     display: flex;

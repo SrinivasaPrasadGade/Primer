@@ -26,15 +26,19 @@ export function GraphCanvas({ data, onNodeClick }: { data: GraphData | undefined
 
         const graph = new Graph();
 
-        // Add nodes (guard against duplicate ids — graphology throws otherwise)
-        data.nodes.forEach((node) => {
-            if (graph.hasNode(node.id)) return;
+        // Seed positions on a circle instead of pure random — random placement produces
+        // the tangled "hairball" look; a circular seed gives ForceAtlas/Sigma a clean
+        // starting point and reads far better for a small entity network.
+        const uniqueNodes = data.nodes.filter((n, i, arr) => arr.findIndex((m) => m.id === n.id) === i);
+        const count = uniqueNodes.length || 1;
+        uniqueNodes.forEach((node, i) => {
+            const angle = (2 * Math.PI * i) / count;
             graph.addNode(node.id, {
                 label: node.display_label || node.entity_value || node.id,
-                size: Math.max(8, (node.risk_score || 10) / 5),
+                size: Math.max(8, Math.min(24, (node.risk_score || 10) / 4)),
                 color: NODE_COLORS[node.entity_type] || "#666",
-                x: Math.random() * 100,
-                y: Math.random() * 100,
+                x: Math.cos(angle) * 10,
+                y: Math.sin(angle) * 10,
             });
         });
 
@@ -54,12 +58,35 @@ export function GraphCanvas({ data, onNodeClick }: { data: GraphData | undefined
             renderEdgeLabels: true,
             defaultNodeColor: "#666",
             defaultEdgeColor: "rgba(255,255,255,0.1)",
+            labelColor: { color: "#F5F5F7" },
+            labelSize: 12,
+            minCameraRatio: 0.2,
+            maxCameraRatio: 4,
         });
 
         renderer.on("clickNode", ({ node }) => onNodeClick(node));
 
-        return () => renderer.kill();
+        // Keep the canvas correctly sized/centred when its container resizes (window
+        // resize, sidebar collapse, orientation change) — Sigma needs an explicit
+        // refresh + camera reset, otherwise it renders at the stale initial size.
+        const observer = new ResizeObserver(() => {
+            renderer.refresh();
+            renderer.getCamera().animatedReset();
+        });
+        observer.observe(containerRef.current);
+
+        return () => {
+            observer.disconnect();
+            renderer.kill();
+        };
     }, [data, onNodeClick]);
 
-    return <div ref={containerRef} className={styles.graphCanvas} />;
+    return (
+        <div className={styles.graphCanvasWrap}>
+            <div ref={containerRef} className={styles.graphCanvas} />
+            {(!data || data.nodes.length === 0) && (
+                <div className={styles.graphEmpty}>Search an entity to explore its network.</div>
+            )}
+        </div>
+    );
 }
