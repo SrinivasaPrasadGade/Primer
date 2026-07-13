@@ -435,11 +435,21 @@ def compute_overall_confidence(signals: dict) -> float:
 # Number reputation
 # ---------------------------------------------------------------------------
 
+def _phone_suffix(value: str) -> str:
+    """Last 10 digits of a phone number, ignoring +, country code, spaces, and dashes,
+    so reputation lookups aren't defeated by formatting differences."""
+    digits = "".join(ch for ch in (value or "") if ch.isdigit())
+    return digits[-10:]
+
+
 async def get_number_reputation(db: AsyncSession, phone_number: str) -> dict | None:
     row = (
         await db.execute(
-            text("SELECT * FROM scam_sentinel.number_reputation WHERE phone_number = :phone"),
-            {"phone": phone_number},
+            text(
+                "SELECT * FROM scam_sentinel.number_reputation "
+                "WHERE RIGHT(regexp_replace(phone_number, '\\D', '', 'g'), 10) = :suffix"
+            ),
+            {"suffix": _phone_suffix(phone_number)},
         )
     ).mappings().first()
     return dict(row) if row else None
@@ -537,7 +547,10 @@ async def process_scam_session(db: AsyncSession, session_id: UUID) -> dict:
         },
     )
     await db.commit()
-    await update_number_reputation(db, session["caller_number"], alert_level)
+    # NOTE: reputation is deliberately NOT bumped here. Classification must be
+    # idempotent — re-running it on the same session should yield identical scores.
+    # Auto-bumping risk_score fed back into the classifier's caller_risk_score feature,
+    # so every re-run drifted. Reputation is updated explicitly via /numbers/{phone}/flag.
 
     return {
         "session_id": str(session_id),

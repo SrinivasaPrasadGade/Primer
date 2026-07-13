@@ -87,7 +87,7 @@ async def test_get_money_flow():
     rows = [
         {"id": uuid4(), "source_id": entity_id, "target_id": uuid4(), "amount": 50000.0,
          "first_seen": None, "from_entity": "acc1", "from_type": "bank_account",
-         "to_entity": "acc2", "to_type": "bank_account"},
+         "to_entity": "acc2", "to_type": "bank_account", "direction": "outflow", "hop": 1},
     ]
     db = AsyncMock()
     db.execute.return_value = FakeResult(rows=rows)

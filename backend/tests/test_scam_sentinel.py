@@ -337,12 +337,12 @@ async def test_process_scam_session_happy_path(monkeypatch):
     reputation_row = {"phone_number": "+911234567890", "risk_score": 50, "total_complaints": 3, "total_flags": 5}
 
     db = AsyncMock()
-    # execute() is called 4 times: fetch session, fetch reputation, update session, upsert reputation
+    # execute() is called 3 times: fetch session, fetch reputation, update session.
+    # Reputation is NOT upserted during classify (classification must stay idempotent).
     db.execute.side_effect = [
         FakeResult(row=session_row),
         FakeResult(row=reputation_row),
         FakeResult(row=None),
-        FakeResult(row={**reputation_row, "risk_score": 75}),
     ]
 
     async def fake_compute_signal_scores(enriched):
@@ -361,4 +361,4 @@ async def test_process_scam_session_happy_path(monkeypatch):
 
     assert result["alert_level"] == "RED"
     assert result["overall_confidence"] == 90.0
-    assert db.commit.await_count == 2
+    assert db.commit.await_count == 1

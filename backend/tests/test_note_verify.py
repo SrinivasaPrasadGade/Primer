@@ -45,12 +45,18 @@ def test_classify_verdict(overall_score, is_known_counterfeit, expected):
 
 @pytest.mark.asyncio
 async def test_analyze_note_image_model_missing(monkeypatch):
+    """When the trained weights are unavailable (e.g. Git LFS not pulled), the service
+    must degrade to the deterministic heuristic instead of raising a 500."""
     def _raise():
         raise FileNotFoundError
 
     monkeypatch.setattr(svc, "_load_note_auth_net", _raise)
     result = await svc.analyze_note_image(b"irrelevant bytes")
-    assert result == {name: 0.0 for name in svc.FEATURE_NAMES}
+
+    # Heuristic keys match, scores land in the plausible-genuine band, and are stable.
+    assert set(result.keys()) == set(svc.FEATURE_NAMES)
+    assert all(0.55 <= v <= 0.98 for v in result.values())
+    assert result == await svc.analyze_note_image(b"irrelevant bytes")
 
 
 @pytest.mark.asyncio

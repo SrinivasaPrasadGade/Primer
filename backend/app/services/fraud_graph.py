@@ -88,31 +88,65 @@ async def get_entity_neighbourhood(db: AsyncSession, entity_type: str, entity_va
     return _to_jsonable({"nodes": [dict(n) for n in nodes], "edges": [dict(e) for e in edges]})
 
 
+_MONEY_FLOW_QUERY = text(
+    """
+    WITH RECURSIVE
+    -- Money leaving the selected entity: follow transferred_to edges forward.
+    outflow(edge_id, source_id, target_id, hop) AS (
+        SELECT e.id, e.source_id, e.target_id, 1
+        FROM fraud_graph.edges e
+        WHERE e.relationship = 'transferred_to' AND e.source_id = :entity_id
+        UNION
+        SELECT e.id, e.source_id, e.target_id, o.hop + 1
+        FROM outflow o
+        JOIN fraud_graph.edges e ON e.source_id = o.target_id AND e.relationship = 'transferred_to'
+        WHERE o.hop < 4
+    ),
+    -- Money arriving at the selected entity: follow transferred_to edges backward.
+    inflow(edge_id, source_id, target_id, hop) AS (
+        SELECT e.id, e.source_id, e.target_id, 1
+        FROM fraud_graph.edges e
+        WHERE e.relationship = 'transferred_to' AND e.target_id = :entity_id
+        UNION
+        SELECT e.id, e.source_id, e.target_id, i.hop + 1
+        FROM inflow i
+        JOIN fraud_graph.edges e ON e.target_id = i.source_id AND e.relationship = 'transferred_to'
+        WHERE i.hop < 4
+    ),
+    traced AS (
+        SELECT edge_id, 'outflow' AS direction, hop FROM outflow
+        UNION
+        SELECT edge_id, 'inflow' AS direction, hop FROM inflow
+    )
+    SELECT DISTINCT ON (e.id)
+           e.id, e.source_id, e.target_id, e.weight AS amount, e.first_seen,
+           s.entity_value AS from_entity, s.entity_type AS from_type,
+           t.entity_value AS to_entity, t.entity_type AS to_type,
+           tr.direction, tr.hop
+    FROM traced tr
+    JOIN fraud_graph.edges e ON e.id = tr.edge_id
+    JOIN fraud_graph.entities s ON e.source_id = s.id
+    JOIN fraud_graph.entities t ON e.target_id = t.id
+    ORDER BY e.id, tr.hop
+    """
+)
+
+
 async def get_money_flow(db: AsyncSession, entity_id: UUID) -> list[dict]:
-    """Trace money flow (transferred_to edges) through the entity's fraud cluster."""
+    """Trace money flow to/from a *specific* entity (not just its cluster).
+
+    Follows `transferred_to` edges forward (money this entity sent, and where it went
+    next) and backward (money this entity received, and where it came from), up to 4
+    hops, so every node produces its own distinct trail. Each edge is annotated with
+    `direction` (inflow/outflow relative to the selected entity) and `hop` distance.
+    """
     rows = (
-        await db.execute(
-            text(
-                """
-                SELECT e.id, e.source_id, e.target_id, e.weight AS amount, e.first_seen,
-                       s.entity_value AS from_entity, s.entity_type AS from_type,
-                       t.entity_value AS to_entity, t.entity_type AS to_type
-                FROM fraud_graph.edges e
-                JOIN fraud_graph.entities s ON e.source_id = s.id
-                JOIN fraud_graph.entities t ON e.target_id = t.id
-                WHERE e.relationship = 'transferred_to'
-                AND e.source_id IN (
-                    SELECT id FROM fraud_graph.entities WHERE cluster_id = (
-                        SELECT cluster_id FROM fraud_graph.entities WHERE id = :entity_id
-                    )
-                )
-                ORDER BY e.first_seen
-                """
-            ),
-            {"entity_id": entity_id},
-        )
+        await db.execute(_MONEY_FLOW_QUERY, {"entity_id": entity_id})
     ).mappings().all()
-    return _to_jsonable([dict(row) for row in rows])
+    # Nearest hops first, outflow before inflow, so the frontend can render the
+    # entity's own direct transfers at the top.
+    ordered = sorted(rows, key=lambda r: (r["hop"], r["direction"], r["first_seen"] or ""))
+    return _to_jsonable([dict(row) for row in ordered])
 
 
 # ---------------------------------------------------------------------------

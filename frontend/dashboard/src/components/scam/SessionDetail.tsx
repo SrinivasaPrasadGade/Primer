@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Badge } from "@/components/shared/Badge";
 import { Card } from "@/components/shared/Card";
 import { ConfidenceBar } from "@/components/shared/ConfidenceBar";
@@ -12,9 +13,27 @@ export function SessionDetail({
     onReclassify,
 }: {
     session: ScamSessionDetail;
-    onAcknowledge: () => void;
-    onReclassify: () => void;
+    onAcknowledge: () => Promise<void>;
+    onReclassify: () => Promise<void>;
 }) {
+    const [ackBusy, setAckBusy] = useState(false);
+    const [reBusy, setReBusy] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const acknowledged = session.status === "acknowledged";
+
+    async function run(fn: () => Promise<void>, setBusy: (v: boolean) => void) {
+        setError(null);
+        setBusy(true);
+        try {
+            await fn();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Action failed");
+        } finally {
+            setBusy(false);
+        }
+    }
+
     return (
         <div className={styles.detailGrid}>
             <Card>
@@ -22,19 +41,33 @@ export function SessionDetail({
                     <Badge level={session.alert_level} />
                     <span>{session.scam_type}</span>
                     {session.deepfake_detected && <Badge level="AMBER" label="AI Voice" />}
+                    {session.status && (
+                        <span className={styles.statusPill} data-status={session.status}>
+                            {session.status}
+                        </span>
+                    )}
                 </div>
                 <ConfidenceBar value={session.overall_confidence} />
                 <p style={{ marginTop: 8, fontFamily: "var(--font-mono)", fontSize: 12 }}>
                     Confidence: {session.overall_confidence.toFixed(1)}% · Duration: {session.call_duration_sec}s
                 </p>
                 <div className={styles.actionRow}>
-                    <button className={`${styles.actionButton} ${styles.actionButtonPrimary}`} onClick={onAcknowledge}>
-                        Acknowledge
+                    <button
+                        className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
+                        onClick={() => run(onAcknowledge, setAckBusy)}
+                        disabled={ackBusy || acknowledged}
+                    >
+                        {acknowledged ? "✓ Acknowledged" : ackBusy ? "Acknowledging…" : "Acknowledge"}
                     </button>
-                    <button className={styles.actionButton} onClick={onReclassify}>
-                        Re-run Classification
+                    <button
+                        className={styles.actionButton}
+                        onClick={() => run(onReclassify, setReBusy)}
+                        disabled={reBusy}
+                    >
+                        {reBusy ? "Re-running…" : "Re-run Classification"}
                     </button>
                 </div>
+                {error && <p className={styles.actionError}>{error}</p>}
             </Card>
 
             <Card>

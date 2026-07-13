@@ -121,18 +121,42 @@ def _jsonable(value: Any) -> Any:
     return json.loads(json.dumps(value, default=str))
 
 
+def _phone_suffix(value: str) -> str:
+    """Last 10 digits of a phone number, ignoring +, country code, spaces, and dashes.
+
+    Officers type numbers inconsistently (`7861999412`, `+91 78619 99412`, `0091-786...`)
+    but the graph/reputation tables store a canonical `+91XXXXXXXXXX`. Matching on the
+    10-digit suffix makes lookups format-agnostic so a known-scam number isn't reported
+    "clean" purely because of punctuation.
+    """
+    digits = "".join(ch for ch in value if ch.isdigit())
+    return digits[-10:]
+
+
 async def _find_entity(db: AsyncSession, entity_type: str, entity_value: str) -> dict | None:
+    # Phone numbers are matched on their 10-digit suffix so formatting differences
+    # (country code, spaces, dashes) don't cause a false "not found".
+    if entity_type == "phone_number":
+        where = (
+            "entity_type = :entity_type "
+            "AND RIGHT(regexp_replace(entity_value, '\\D', '', 'g'), 10) = :suffix"
+        )
+        params = {"entity_type": entity_type, "suffix": _phone_suffix(entity_value)}
+    else:
+        where = "entity_type = :entity_type AND entity_value = :entity_value"
+        params = {"entity_type": entity_type, "entity_value": entity_value}
+
     row = (
         await db.execute(
             text(
-                """
+                f"""
                 SELECT id, entity_type, entity_value, display_label, risk_score,
                        cluster_id, first_seen, last_seen
                 FROM fraud_graph.entities
-                WHERE entity_type = :entity_type AND entity_value = :entity_value
+                WHERE {where}
                 """
             ),
-            {"entity_type": entity_type, "entity_value": entity_value},
+            params,
         )
     ).mappings().first()
     return dict(row) if row else None
@@ -238,10 +262,10 @@ async def check_number_reputation(db: AsyncSession, phone_number: str) -> dict:
                 SELECT phone_number, risk_score, total_flags, total_complaints,
                        is_blacklisted, primary_scam_type, last_flagged
                 FROM scam_sentinel.number_reputation
-                WHERE phone_number = :phone_number
+                WHERE RIGHT(regexp_replace(phone_number, '\\D', '', 'g'), 10) = :suffix
                 """
             ),
-            {"phone_number": phone_number},
+            {"phone_number": phone_number, "suffix": _phone_suffix(phone_number)},
         )
     ).mappings().first()
     if not row:

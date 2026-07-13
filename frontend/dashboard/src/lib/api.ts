@@ -277,6 +277,8 @@ export interface MoneyFlowEdge {
     from_type: string;
     to_entity: string;
     to_type: string;
+    direction: "inflow" | "outflow";
+    hop: number;
 }
 
 export const api = new ApiClient();

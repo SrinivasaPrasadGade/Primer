@@ -182,3 +182,36 @@
 .actionButtonPrimary:hover {
     background: var(--accent-600);
 }
+.actionButton:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.statusPill {
+    margin-left: auto;
+    text-transform: capitalize;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 2px 10px;
+    border-radius: var(--radius-pill, 999px);
+    background: var(--color-layer-3);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-default);
+}
+.statusPill[data-status="acknowledged"] {
+    background: color-mix(in srgb, #16a34a 18%, transparent);
+    color: #16a34a;
+    border-color: color-mix(in srgb, #16a34a 40%, transparent);
+}
+.statusPill[data-status="classified"] {
+    background: color-mix(in srgb, var(--accent-500) 16%, transparent);
+    color: var(--accent-500);
+    border-color: color-mix(in srgb, var(--accent-500) 40%, transparent);
+}
+
+.actionError {
+    margin-top: var(--space-3);
+    color: #dc2626;
+    font-size: 12px;
+}

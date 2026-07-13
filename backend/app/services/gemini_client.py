@@ -13,6 +13,11 @@ DEFAULT_MODEL = "gemini-2.5-flash"
 DEFAULT_TEMPERATURE = 0.3
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 1.5
+# Hard per-attempt ceiling. Without this, a stalled connection to the Gemini endpoint
+# (blocked egress, dropped packets) hangs the request forever — which surfaced as the
+# Case Summarizer / Copilot "loading indefinitely". On timeout we fail fast and callers
+# degrade gracefully.
+CALL_TIMEOUT_SECONDS = 30.0
 
 _configured = False
 
@@ -67,10 +72,11 @@ async def _call_with_retries(call):
     last_error: Exception | None = None
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            return await asyncio.to_thread(call)
-        except (ResourceExhausted, GoogleAPICallError) as exc:
+            return await asyncio.wait_for(asyncio.to_thread(call), timeout=CALL_TIMEOUT_SECONDS)
+        except (ResourceExhausted, GoogleAPICallError, asyncio.TimeoutError) as exc:
             last_error = exc
-            logger.warning("Gemini call failed (attempt %s/%s): %s", attempt, MAX_RETRIES, exc)
+            reason = "timed out" if isinstance(exc, asyncio.TimeoutError) else exc
+            logger.warning("Gemini call failed (attempt %s/%s): %s", attempt, MAX_RETRIES, reason)
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(RETRY_BACKOFF_SECONDS * attempt)
     raise GeminiError(f"Gemini API call failed after {MAX_RETRIES} attempts") from last_error

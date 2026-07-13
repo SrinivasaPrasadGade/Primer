@@ -150,19 +150,14 @@ async def _crime_counts_near(db: AsyncSession, lat: float, lng: float, radius_km
     return dict(row) if row else {"crime_count_7d": 0, "crime_count_30d": 0, "avg_loss_amount_area": 0}
 
 
-async def generate_hotspot_predictions(
-    db: AsyncSession,
-    bounds: dict,
-    crime_type: str | None = None,
-    grid_km: float = 2.0,
-    risk_threshold: int = 50,
-) -> list[dict]:
-    """Score a grid of candidate points across bounds with the trained hotspot model,
-    persist predictions scoring at/above risk_threshold, and return them.
+async def _score_grid(
+    db: AsyncSession, bounds: dict, grid_km: float
+) -> list[tuple[float, float, float]]:
+    """Score every grid point across bounds with the hotspot model.
 
-    Per-point crime-count queries run sequentially — a single AsyncSession/connection
-    isn't safe to fan out concurrently, and at demo scale (a city bounding box, 1-2km
-    grid) this is a few dozen round trips, not thousands.
+    Returns [(lat, lng, risk_score_0_100), ...] with no threshold filtering and no
+    persistence — the caller decides what to keep. Shared by both the persist-on-generate
+    path and the lazy read path so scoring logic lives in one place.
     """
     model = _load_hotspot_model()
     today = date.today()
@@ -184,9 +179,28 @@ async def generate_hotspot_predictions(
         )
 
     risk_scores = model.predict_proba(np.array(features, dtype=np.float32))[:, 1] * 100
+    return [(lat, lng, float(score)) for (lat, lng), score in zip(points, risk_scores)]
+
+
+async def generate_hotspot_predictions(
+    db: AsyncSession,
+    bounds: dict,
+    crime_type: str | None = None,
+    grid_km: float = 2.0,
+    risk_threshold: int = 50,
+) -> list[dict]:
+    """Score a grid of candidate points across bounds with the trained hotspot model,
+    persist predictions scoring at/above risk_threshold, and return them.
+
+    Per-point crime-count queries run sequentially — a single AsyncSession/connection
+    isn't safe to fan out concurrently, and at demo scale (a city bounding box, 1-2km
+    grid) this is a few dozen round trips, not thousands.
+    """
+    today = date.today()
+    scored = await _score_grid(db, bounds, grid_km)
 
     predictions = []
-    for (lat, lng), risk_score in zip(points, risk_scores):
+    for lat, lng, risk_score in scored:
         if risk_score < risk_threshold:
             continue
         row = (
@@ -237,4 +251,51 @@ async def get_stored_predictions(
     rows = (
         await db.execute(query, {**bounds, "prediction_date": prediction_date})
     ).mappings().all()
-    return _to_jsonable([dict(row) for row in rows])
+    if rows:
+        return _to_jsonable([dict(row) for row in rows])
+
+    # Nothing pre-generated for this view. Rather than showing "0 zones", lazily score the
+    # grid and surface the highest-risk zones so the map is useful out of the box. These
+    # are ephemeral (not persisted) — an lea_officer can still POST /predictions/generate
+    # to save an official run.
+    if prediction_date is not None:
+        return []
+    return await get_live_predictions(db, bounds)
+
+
+LIVE_PREDICTION_FLOOR = 30  # show zones at/above this risk when none are pre-generated
+LIVE_PREDICTION_MAX = 8     # cap so the map isn't blanketed
+
+
+async def get_live_predictions(db: AsyncSession, bounds: dict, grid_km: float = 2.0) -> list[dict]:
+    """Ephemeral, on-the-fly hotspot zones for a viewport with no stored predictions."""
+    import uuid
+
+    try:
+        scored = await _score_grid(db, bounds, grid_km)
+    except FileNotFoundError:
+        logger.warning("Hotspot model unavailable — cannot compute live predictions")
+        return []
+
+    ranked = sorted(scored, key=lambda p: p[2], reverse=True)
+    top = [p for p in ranked if p[2] >= LIVE_PREDICTION_FLOOR][:LIVE_PREDICTION_MAX]
+    # If the whole viewport scores low, still show the single hottest zone for context.
+    if not top and ranked:
+        top = ranked[:1]
+
+    today = date.today()
+    return _to_jsonable(
+        [
+            {
+                "id": str(uuid.uuid4()),
+                "prediction_date": today,
+                "crime_type": None,
+                "lng": lng,
+                "lat": lat,
+                "radius_km": grid_km / 2,
+                "risk_score": round(score),
+                "model_version": MODEL_VERSION,
+            }
+            for lat, lng, score in top
+        ]
+    )
