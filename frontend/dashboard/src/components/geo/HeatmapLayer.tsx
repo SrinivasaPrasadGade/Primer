@@ -1,11 +1,11 @@
 "use client";
 import { useEffect } from "react";
-import type mapboxgl from "mapbox-gl";
+import type maplibregl from "maplibre-gl";
 import { HeatmapCell } from "@/lib/api";
 
-// Manages the crime heatmap source + layer on a given Mapbox map instance.
+// Manages the crime heatmap source + layer on a given MapLibre map instance.
 // Red-orange-yellow gradient per UI/UX §6.3.
-export function HeatmapLayer({ map, data }: { map: mapboxgl.Map | null; data: HeatmapCell[] }) {
+export function HeatmapLayer({ map, data }: { map: maplibregl.Map | null; data: HeatmapCell[] }) {
     useEffect(() => {
         if (!map) return;
 
@@ -37,7 +37,7 @@ export function HeatmapLayer({ map, data }: { map: mapboxgl.Map | null; data: He
 
     useEffect(() => {
         if (!map) return;
-        const source = map.getSource("heatmap-points") as mapboxgl.GeoJSONSource | undefined;
+        const source = map.getSource("heatmap-points") as maplibregl.GeoJSONSource | undefined;
         if (!source) return;
         source.setData({
             type: "FeatureCollection",

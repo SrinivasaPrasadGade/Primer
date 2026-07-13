@@ -1,15 +1,17 @@
 "use client";
 import { CSSProperties, useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { GeoIncident, HeatmapCell, HotspotPrediction } from "@/lib/api";
 import { HeatmapLayer } from "./HeatmapLayer";
 import styles from "@/styles/geo.module.css";
 
 const MUMBAI_CENTER: [number, number] = [72.88, 19.07];
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+// Free, no-token dark basemap (CARTO) — swapped in for Mapbox GL, which requires
+// a billing-gated access token even on its free tier.
+const MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
-function toBoundsString(bounds: mapboxgl.LngLatBounds): string {
+function toBoundsString(bounds: maplibregl.LngLatBounds): string {
     return [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()].map((n) => n.toFixed(5)).join(",");
 }
 
@@ -33,16 +35,15 @@ export function CrimeMap({
     zoom?: number;
 }) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const mapRef = useRef<mapboxgl.Map | null>(null);
-    const [map, setMap] = useState<mapboxgl.Map | null>(null);
+    const mapRef = useRef<maplibregl.Map | null>(null);
+    const [map, setMap] = useState<maplibregl.Map | null>(null);
 
     useEffect(() => {
         if (!containerRef.current || mapRef.current) return;
-        mapboxgl.accessToken = MAPBOX_TOKEN;
 
-        const m = new mapboxgl.Map({
+        const m = new maplibregl.Map({
             container: containerRef.current,
-            style: "mapbox://styles/mapbox/dark-v11",
+            style: MAP_STYLE,
             center: MUMBAI_CENTER,
             zoom,
             interactive,
@@ -106,7 +107,7 @@ export function CrimeMap({
 
     useEffect(() => {
         if (!map || !map.getSource("incidents")) return;
-        (map.getSource("incidents") as mapboxgl.GeoJSONSource).setData({
+        (map.getSource("incidents") as maplibregl.GeoJSONSource).setData({
             type: "FeatureCollection",
             features: incidents.map((incident) => ({
                 type: "Feature",
@@ -118,7 +119,7 @@ export function CrimeMap({
 
     useEffect(() => {
         if (!map || !map.getSource("predictions")) return;
-        (map.getSource("predictions") as mapboxgl.GeoJSONSource).setData({
+        (map.getSource("predictions") as maplibregl.GeoJSONSource).setData({
             type: "FeatureCollection",
             features: predictions.map((p) => ({
                 type: "Feature",
