@@ -95,17 +95,14 @@ async def generate_case_summary(evidence_text: str) -> dict:
         }
 
 
-async def summarize_and_store(
+async def _store_summary(
     db: AsyncSession,
-    entity_type: str,
-    entity_value: str,
+    summary: dict,
+    source_evidence: list[str],
     generated_by: UUID,
     investigation_id: UUID | None = None,
 ) -> dict:
-    """Entry point for Srinivas's routers: extract evidence, summarize via Gemini, persist."""
-    evidence_text = await extract_evidence(db, entity_type, entity_value)
-    summary = await generate_case_summary(evidence_text)
-
+    """Persist a generated summary into core.case_summaries and return the row."""
     row = (
         await db.execute(
             text(
@@ -127,10 +124,51 @@ async def summarize_and_store(
                 "suspects": json.dumps(summary.get("suspects", [])),
                 "related_complaints": json.dumps(summary.get("related_complaints", [])),
                 "confidence_score": summary.get("confidence_score", 0),
-                "source_evidence": [f"{entity_type}:{entity_value}"],
+                "source_evidence": source_evidence,
                 "generated_by": generated_by,
             },
         )
     ).mappings().first()
     await db.commit()
     return _to_jsonable(dict(row))
+
+
+async def summarize_and_store(
+    db: AsyncSession,
+    entity_type: str,
+    entity_value: str,
+    generated_by: UUID,
+    investigation_id: UUID | None = None,
+) -> dict:
+    """Entry point for Srinivas's routers: extract evidence, summarize via Gemini, persist."""
+    evidence_text = await extract_evidence(db, entity_type, entity_value)
+    summary = await generate_case_summary(evidence_text)
+    return await _store_summary(
+        db,
+        summary,
+        source_evidence=[f"{entity_type}:{entity_value}"],
+        generated_by=generated_by,
+        investigation_id=investigation_id,
+    )
+
+
+async def summarize_text_and_store(
+    db: AsyncSession,
+    evidence_text: str,
+    source_label: str,
+    generated_by: UUID,
+    investigation_id: UUID | None = None,
+) -> dict:
+    """Summarise raw evidence text (e.g. an uploaded case file) and persist it.
+
+    Same as summarize_and_store() but skips extract_evidence() -- the text is the
+    evidence -- and records `source_label` in source_evidence.
+    """
+    summary = await generate_case_summary(evidence_text)
+    return await _store_summary(
+        db,
+        summary,
+        source_evidence=[source_label],
+        generated_by=generated_by,
+        investigation_id=investigation_id,
+    )

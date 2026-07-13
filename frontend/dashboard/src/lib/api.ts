@@ -35,10 +35,13 @@ class ApiClient {
     }
 
     private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+        // For FormData bodies, let the browser set Content-Type (with the multipart
+        // boundary); forcing application/json breaks the upload.
+        const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
         const res = await fetch(`${API_V1}${path}`, {
             ...options,
             headers: {
-                "Content-Type": "application/json",
+                ...(isFormData ? {} : { "Content-Type": "application/json" }),
                 ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
                 ...options.headers,
             },
@@ -127,6 +130,13 @@ class ApiClient {
     scanQR = (qrContent: string) => this.post("/qr/scan", { qr_content: qrContent });
     summarizeCase = (entityType: string, entityValue: string, investigationId?: string | null) =>
         this.post<CaseSummary>("/case/summarize", { entity_type: entityType, entity_value: entityValue, investigation_id: investigationId ?? null });
+    summarizeCaseFile = (file: File, investigationId?: string | null) => {
+        const form = new FormData();
+        form.append("file", file);
+        if (investigationId) form.append("investigation_id", investigationId);
+        // No Content-Type header — the browser sets the multipart boundary.
+        return this.request<CaseSummary>("/case/summarize-file", { method: "POST", body: form });
+    };
     triggerPanic = (payload: {
         caller_number?: string;
         call_duration_sec?: number;

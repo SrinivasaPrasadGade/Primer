@@ -7,53 +7,28 @@ import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { api, CaseSummary } from "@/lib/api";
 import styles from "@/styles/dashboard.module.css";
 
-const ENTITY_TYPES = ["phone_number", "bank_account", "upi_id", "person", "device", "ip_address", "complaint"];
-
-// Pull the strongest identifier out of an uploaded case/complaint file. The
-// backend summarises by entity (it extracts evidence from the DB), so we detect
-// the entity from the file's text and hand that to /case/summarize.
-function detectEntity(text: string): { type: string; value: string } | null {
-    const upi = text.match(/[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}/);
-    if (upi) return { type: "upi_id", value: upi[0] };
-    const phone = text.match(/(?:\+?91[\s-]?)?[6-9]\d{9}/);
-    if (phone) return { type: "phone_number", value: phone[0].replace(/[\s+-]/g, "") };
-    const account = text.match(/\b\d{9,18}\b/);
-    if (account) return { type: "bank_account", value: account[0] };
-    return null;
-}
-
 export default function CaseSummarizerPage() {
     const inputRef = useRef<HTMLInputElement>(null);
-    const [fileName, setFileName] = useState<string | null>(null);
-    const [entityType, setEntityType] = useState(ENTITY_TYPES[0]);
-    const [entityValue, setEntityValue] = useState("");
+    const [file, setFile] = useState<File | null>(null);
     const [summary, setSummary] = useState<CaseSummary | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    async function handleFile(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    function handleFile(e: ChangeEvent<HTMLInputElement>) {
+        const selected = e.target.files?.[0];
+        if (!selected) return;
         setError(null);
         setSummary(null);
-        setFileName(file.name);
-        const text = await file.text();
-        const detected = detectEntity(text);
-        if (detected) {
-            setEntityType(detected.type);
-            setEntityValue(detected.value);
-        } else {
-            setEntityValue("");
-            setError("No phone / UPI / account identifier found in the file — enter one manually below.");
-        }
+        setFile(selected);
     }
 
     async function handleSummarize() {
-        if (!entityValue.trim()) return;
+        if (!file) return;
         setLoading(true);
         setError(null);
         try {
-            const result = await api.summarizeCase(entityType, entityValue.trim());
+            // Send the file verbatim — the server summarises its text directly.
+            const result = await api.summarizeCaseFile(file);
             setSummary(result);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to generate summary");
@@ -70,34 +45,21 @@ export default function CaseSummarizerPage() {
                 <div className={styles.caseUpload}>
                     <button className={styles.caseUploadZone} onClick={() => inputRef.current?.click()}>
                         <Upload size={24} />
-                        <span>{fileName ? "Replace case file" : "Upload a case / complaint file"}</span>
+                        <span>{file ? "Replace case file" : "Upload a case / complaint file"}</span>
                         <span className={styles.caseUploadHint}>.txt, .json, .csv, .log</span>
                     </button>
                     <input ref={inputRef} type="file" accept=".txt,.json,.csv,.log,text/*" hidden onChange={handleFile} />
 
-                    {fileName && (
+                    {file && (
                         <div className={styles.caseFileRow}>
                             <FileText size={16} />
-                            <span>{fileName}</span>
+                            <span>{file.name}</span>
                         </div>
                     )}
 
-                    {fileName && (
+                    {file && (
                         <div className={styles.caseForm}>
-                            <select className={styles.caseSelect} value={entityType} onChange={(e) => setEntityType(e.target.value)}>
-                                {ENTITY_TYPES.map((t) => (
-                                    <option key={t} value={t}>
-                                        {t.replace(/_/g, " ")}
-                                    </option>
-                                ))}
-                            </select>
-                            <input
-                                className={styles.caseInput}
-                                placeholder="Detected entity — edit if needed"
-                                value={entityValue}
-                                onChange={(e) => setEntityValue(e.target.value)}
-                            />
-                            <button className={styles.caseSubmit} onClick={handleSummarize} disabled={loading || !entityValue.trim()}>
+                            <button className={styles.caseSubmit} onClick={handleSummarize} disabled={loading}>
                                 {loading ? "Summarizing…" : "Summarize"}
                             </button>
                         </div>
