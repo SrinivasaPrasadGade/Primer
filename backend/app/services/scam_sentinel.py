@@ -20,6 +20,8 @@ import numpy as np
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.phone import normalize_phone
+
 logger = logging.getLogger(__name__)
 
 ML_MODELS_DIR = Path(__file__).resolve().parent.parent / "ml" / "models"
@@ -436,10 +438,17 @@ def compute_overall_confidence(signals: dict) -> float:
 # ---------------------------------------------------------------------------
 
 async def get_number_reputation(db: AsyncSession, phone_number: str) -> dict | None:
+    """Look up a number's reputation. Normalises the input to stored E.164 form first.
+
+    Numbers are stored as +91XXXXXXXXXX but arrive here from URL path params typed by
+    officers and citizens ("9876543210", "+91 98765 43210"). An exact-match miss is
+    reported by every caller as a clean number — /screen/number even recommends
+    "allow" — so a normalisation gap is a false negative on a known scammer.
+    """
     row = (
         await db.execute(
             text("SELECT * FROM scam_sentinel.number_reputation WHERE phone_number = :phone"),
-            {"phone": phone_number},
+            {"phone": normalize_phone(phone_number)},
         )
     ).mappings().first()
     return dict(row) if row else None
@@ -460,6 +469,11 @@ async def update_number_reputation(db: AsyncSession, phone_number: str, alert_le
     """
     severity_bump = SEVERITY_BUMP.get(alert_level, 0)
     is_scam_flag = int(alert_level in ("RED", "AMBER"))
+    # Normalise on the way IN as well as on the way out. POST /scam/numbers/{phone}/flag
+    # passes a raw path param straight through, so without this an officer flagging
+    # "9876543210" inserts a second row alongside "+919876543210" and the number's
+    # reputation is split across two records that neither lookup will merge.
+    phone_number = normalize_phone(phone_number)
 
     row = (
         await db.execute(

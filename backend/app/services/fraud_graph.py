@@ -14,6 +14,8 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.phone import normalize_phone
+
 
 def _to_jsonable(value):
     """Round-trip UUID/datetime/Decimal through JSON so they're plain str/float.
@@ -76,6 +78,9 @@ _EDGES_BETWEEN_QUERY = text(
 
 async def get_entity_neighbourhood(db: AsyncSession, entity_type: str, entity_value: str, depth: int = 2) -> dict:
     """Get the N-hop neighbourhood of an entity, ready for frontend graph visualisation."""
+    if entity_type == "phone_number":
+        # Stored as +91XXXXXXXXXX; callers pass whatever was typed or detected.
+        entity_value = normalize_phone(entity_value)
     nodes = (
         await db.execute(_NEIGHBOURHOOD_QUERY, {"entity_type": entity_type, "entity_value": entity_value, "depth": depth})
     ).mappings().all()
