@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/shared/Card";
@@ -16,15 +17,26 @@ export default function ScamSessionDetailPage() {
         () => api.getScamSession(params.id)
     );
 
-    async function handleAcknowledge() {
-        await api.acknowledgeScamSession(params.id);
-        mutate();
+    // Both actions only change server state, so without a pending/error state a failed
+    // call is indistinguishable from a successful one.
+    const [pendingAction, setPendingAction] = useState<"acknowledge" | "reclassify" | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
+
+    async function runAction(action: "acknowledge" | "reclassify", call: () => Promise<unknown>) {
+        setPendingAction(action);
+        setActionError(null);
+        try {
+            await call();
+            await mutate();
+        } catch (err) {
+            setActionError(err instanceof Error ? err.message : `Failed to ${action} this session`);
+        } finally {
+            setPendingAction(null);
+        }
     }
 
-    async function handleReclassify() {
-        await api.classifyScamSession(params.id);
-        mutate();
-    }
+    const handleAcknowledge = () => runAction("acknowledge", () => api.acknowledgeScamSession(params.id));
+    const handleReclassify = () => runAction("reclassify", () => api.classifyScamSession(params.id));
 
     if (error) {
         return (
@@ -62,7 +74,13 @@ export default function ScamSessionDetailPage() {
                     </button>
                 }
             />
-            <SessionDetail session={session} onAcknowledge={handleAcknowledge} onReclassify={handleReclassify} />
+            <SessionDetail
+                session={session}
+                onAcknowledge={handleAcknowledge}
+                onReclassify={handleReclassify}
+                pendingAction={pendingAction}
+                actionError={actionError}
+            />
         </>
     );
 }

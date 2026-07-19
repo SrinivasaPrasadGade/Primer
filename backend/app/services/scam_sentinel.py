@@ -537,7 +537,12 @@ async def process_scam_session(db: AsyncSession, session_id: UUID) -> dict:
             """
             UPDATE scam_sentinel.scam_sessions
             SET signal_scores = CAST(:signals AS JSONB), overall_confidence = :confidence,
-                alert_level = :alert_level, status = 'classified', updated_at = NOW()
+                alert_level = :alert_level,
+                -- Only advance an unclassified session. 'acknowledged', 'investigating'
+                -- and 'closed' are all downstream of classification, so overwriting them
+                -- with 'classified' would silently discard an officer's triage decision.
+                status = CASE WHEN status = 'active' THEN 'classified' ELSE status END,
+                updated_at = NOW()
             WHERE id = :session_id
             """
         ),
