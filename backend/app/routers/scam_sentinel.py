@@ -194,6 +194,7 @@ async def get_stats(
                     COUNT(*) FILTER (WHERE alert_level = 'AMBER') AS amber_count,
                     COUNT(*) FILTER (WHERE alert_level = 'YELLOW') AS yellow_count,
                     COUNT(*) FILTER (WHERE status = 'active') AS active_count,
+                    COUNT(*) FILTER (WHERE status = 'closed') AS closed_count,
                     COALESCE(AVG(overall_confidence), 0) AS avg_confidence
                 FROM scam_sentinel.scam_sessions
                 """

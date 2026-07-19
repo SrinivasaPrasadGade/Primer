@@ -24,6 +24,8 @@ export default function HomeDashboard() {
     const amberCount = Number(stats?.amber_count ?? 0);
     const yellowCount = Number(stats?.yellow_count ?? 0);
     const totalSessions = Number(stats?.total_sessions ?? redCount + amberCount + yellowCount);
+    const activeCount = Number(stats?.active_count ?? 0);
+    const closedCount = Number(stats?.closed_count ?? 0);
 
     return (
         <>
@@ -34,10 +36,13 @@ export default function HomeDashboard() {
                     Array.from({ length: 4 }).map((_, i) => <LoadingSkeleton key={i} height={78} />)
                 ) : (
                     <>
+                        {/* ThreatLevel's legend below already breaks out amber and yellow, so
+                            those cards would only repeat it. Red stays as the headline severity;
+                            the rest track the funnel: volume -> work queue -> outcome. */}
                         <StatCard label="Total Sessions" value={totalSessions} icon={<Activity size={16} />} />
                         <StatCard label="Red Alerts" value={redCount} icon={<PhoneCall size={16} />} tone="red" />
-                        <StatCard label="Amber Alerts" value={amberCount} icon={<FileWarning size={16} />} tone="amber" />
-                        <StatCard label="Resolved" value={yellowCount} icon={<ShieldCheck size={16} />} tone="green" />
+                        <StatCard label="Awaiting Triage" value={activeCount} icon={<FileWarning size={16} />} tone="amber" />
+                        <StatCard label="Resolved" value={closedCount} icon={<ShieldCheck size={16} />} tone="green" />
                     </>
                 )}
             </div>

@@ -208,6 +208,11 @@ export interface ScamStats {
     red_count?: number;
     amber_count?: number;
     yellow_count?: number;
+    /** Sessions still awaiting classification. */
+    active_count?: number;
+    /** Sessions an officer has closed out. */
+    closed_count?: number;
+    avg_confidence?: number;
     [key: string]: unknown;
 }
 
