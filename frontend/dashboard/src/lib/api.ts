@@ -154,7 +154,13 @@ class ApiClient {
 
     // Extra features
     askCopilot = (question: string) =>
-        this.post<{ available?: boolean; answer: string; data: unknown; sources: unknown; query_executed?: string }>(
+        this.post<{
+            available?: boolean;
+            answer: string;
+            data: unknown[];
+            sources: string[];
+            query_executed: { tool: string; args: Record<string, unknown> }[];
+        }>(
             "/copilot/query",
             { question },
             AI_TIMEOUT_MS,

@@ -18,20 +18,173 @@
 
 .message {
     max-width: 70%;
+    min-width: 0;
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-lg);
     font-size: 13px;
     line-height: 1.5;
+    overflow-wrap: anywhere;
 }
 .messageAssistant {
     align-self: flex-start;
     background: var(--color-layer-2);
     color: var(--color-text-primary);
+    /* Answers carry tables, lists and code — 70% is too narrow to read them. */
+    max-width: 85%;
 }
 .messageUser {
     align-self: flex-end;
     background: var(--accent-500);
     color: white;
+}
+.messageFailed {
+    border: 1px solid var(--color-red);
+    color: var(--color-red);
+}
+
+/* User input is plain text; keep their newlines instead of collapsing them. */
+.userText {
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+/* --- rendered markdown ------------------------------------------------- */
+.markdown > :first-child {
+    margin-top: 0;
+}
+.markdown > :last-child {
+    margin-bottom: 0;
+}
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown blockquote,
+.markdown table {
+    margin: var(--space-2) 0;
+}
+.markdown ul,
+.markdown ol {
+    padding-left: var(--space-4);
+}
+.markdown li {
+    margin: 2px 0;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: var(--space-3) 0 var(--space-1);
+}
+.markdown a {
+    color: var(--accent-500);
+    text-decoration: underline;
+}
+.markdown code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--color-layer-3);
+    border-radius: var(--radius-sm);
+    padding: 1px 4px;
+}
+.markdown pre {
+    background: var(--color-layer-3);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    overflow-x: auto;
+    margin: var(--space-2) 0;
+}
+.markdown pre code {
+    background: none;
+    padding: 0;
+    white-space: pre;
+}
+.markdown blockquote {
+    border-left: 2px solid var(--color-border-default);
+    padding-left: var(--space-3);
+    color: var(--color-text-secondary);
+}
+/* Tables can exceed the bubble; scroll them rather than the page. */
+.markdown .tableWrap,
+.markdown table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+}
+.markdown th,
+.markdown td {
+    border: 1px solid var(--color-border-subtle);
+    padding: var(--space-1) var(--space-2);
+    text-align: left;
+    white-space: nowrap;
+}
+.markdown th {
+    background: var(--color-layer-3);
+    font-weight: 600;
+}
+
+/* --- tool trace -------------------------------------------------------- */
+.trace {
+    margin-top: var(--space-3);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+.sourceRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+.sourceChip {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: var(--color-layer-3);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+}
+.traceToggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--color-text-tertiary);
+    font-size: 11px;
+    cursor: pointer;
+}
+.traceToggle:hover {
+    color: var(--color-text-secondary);
+}
+.traceList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+.traceTool {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+.traceArgs {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+    background: var(--color-layer-3);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2);
+    margin: 4px 0 0;
+    overflow-x: auto;
+    white-space: pre;
 }
 
 .inputBar {

@@ -1,8 +1,8 @@
 "use client";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
 import { api } from "@/lib/api";
-import { ChatMessage, ChatMessageData } from "./ChatMessage";
+import { ChatMessage, ChatMessageData, ToolCall } from "./ChatMessage";
 import styles from "@/styles/copilot.module.css";
 
 export function ChatInterface() {
@@ -11,6 +11,31 @@ export function ChatInterface() {
     ]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
+    const messagesRef = useRef<HTMLDivElement>(null);
+    // Don't yank the view back down if the officer scrolled up to re-read an
+    // earlier answer; only follow along when they're already at the bottom.
+    const pinnedToBottom = useRef(true);
+
+    function handleScroll() {
+        const el = messagesRef.current;
+        if (!el) return;
+        pinnedToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    }
+
+    // Keep the newest message in view as the conversation grows. Setting
+    // scrollTop directly rather than scrollIntoView(), which aligns against the
+    // container's bottom padding and leaves the last line clipped. The rAF pass
+    // catches markdown that changes height after the first paint (tables, code).
+    useEffect(() => {
+        const el = messagesRef.current;
+        if (!el || !pinnedToBottom.current) return;
+        const toBottom = () => {
+            el.scrollTop = el.scrollHeight;
+        };
+        toBottom();
+        const raf = requestAnimationFrame(toBottom);
+        return () => cancelAnimationFrame(raf);
+    }, [messages, loading]);
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -21,9 +46,23 @@ export function ChatInterface() {
         setLoading(true);
         try {
             const res = await api.askCopilot(question);
-            setMessages((prev) => [...prev, { role: "assistant", text: res.answer }]);
+            setMessages((prev) => [
+                ...prev,
+                {
+                    role: "assistant",
+                    text: res.answer,
+                    sources: res.sources,
+                    queryExecuted: res.query_executed as ToolCall[] | undefined,
+                    // A degraded reply is a status message, not a finding — don't let
+                    // it render as though the Copilot answered the question.
+                    failed: res.available === false,
+                },
+            ]);
         } catch (err) {
-            setMessages((prev) => [...prev, { role: "assistant", text: err instanceof Error ? err.message : "Something went wrong." }]);
+            setMessages((prev) => [
+                ...prev,
+                { role: "assistant", text: err instanceof Error ? err.message : "Something went wrong.", failed: true },
+            ]);
         } finally {
             setLoading(false);
         }
@@ -31,7 +70,7 @@ export function ChatInterface() {
 
     return (
         <div className={styles.chat}>
-            <div className={styles.messages}>
+            <div className={styles.messages} ref={messagesRef} onScroll={handleScroll}>
                 {messages.map((m, i) => (
                     <ChatMessage key={i} message={m} />
                 ))}
