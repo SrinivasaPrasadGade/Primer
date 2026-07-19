@@ -108,7 +108,11 @@ class ApiClient {
     // Note Verify
     verifyNote = (payload: {
         image_base64: string;
-        denomination?: number;
+        // Required, and constrained to the denominations the API accepts.
+        // NoteAuthNet scores authenticity only — it has no denomination head —
+        // so the backend takes this from the caller and rejects anything else
+        // with a 422. Optional here would push that failure to runtime.
+        denomination: NoteDenomination;
         serial_number?: string;
         scan_source?: "mobile" | "web" | "scanner";
         lat?: number;
@@ -215,6 +219,10 @@ export interface ScamStats {
     avg_confidence?: number;
     [key: string]: unknown;
 }
+
+/** Mirrors the `Literal[...]` on NoteVerifyRequest.denomination in the backend. */
+export const NOTE_DENOMINATIONS = [10, 20, 50, 100, 200, 500, 2000] as const;
+export type NoteDenomination = (typeof NOTE_DENOMINATIONS)[number];
 
 export interface NoteVerifyResult {
     id: string;

@@ -216,6 +216,26 @@ def test_number_check_public_no_auth(client, monkeypatch):
     assert r.json()["risk_score"] == 0
 
 
+def test_number_check_miss_is_not_reported_as_safe(client, monkeypatch):
+    """An unreported number must not be presented as a clean verdict.
+
+    This is a public endpoint a citizen may consult mid-call. risk_score 0 here
+    means "nobody has reported this to Primer", not "this caller is safe" — most
+    scam numbers are unreported until after someone has lost money, so wording
+    that reads as an all-clear actively misleads the person it should protect.
+    """
+    monkeypatch.setattr("app.services.scam_sentinel.get_number_reputation", _async_return(None))
+    body = client.get("/api/v1/citizen/number-check/+919999999999").json()
+
+    # A client must be able to tell "no record" apart from "record says low risk".
+    assert body["found"] is False
+
+    message = body["message"].lower()
+    assert "not a safety guarantee" in message
+    for absolute in ("this number is safe", "no risk", "verified safe", "clean"):
+        assert absolute not in message
+
+
 # ---------------------------------------------------------------------------
 # Happy-path delegation
 # ---------------------------------------------------------------------------

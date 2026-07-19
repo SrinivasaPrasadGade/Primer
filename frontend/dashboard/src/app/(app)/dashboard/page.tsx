@@ -29,11 +29,14 @@ export default function HomeDashboard() {
 
     return (
         <>
-            <PageHeader title="Home Dashboard" subtitle="Real-time overview across all Primer modules" />
+            {/* The sidebar already names the page and the cards below already say
+                what they are, so a title plus a subtitle restating both was two
+                lines of chrome above the first real number. */}
+            <PageHeader title="Dashboard" />
 
             <div className={styles.statGrid}>
                 {statsLoading ? (
-                    Array.from({ length: 4 }).map((_, i) => <LoadingSkeleton key={i} height={78} />)
+                    Array.from({ length: 4 }).map((_, i) => <LoadingSkeleton key={i} height={84} />)
                 ) : (
                     <>
                         {/* ThreatLevel's legend below already breaks out amber and yellow, so

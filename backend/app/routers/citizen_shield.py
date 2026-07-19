@@ -59,5 +59,20 @@ async def number_check(phone: str, db: AsyncSession = Depends(get_db)):
     """Public number risk check — no auth, per technical_requirements_document.md §3.6."""
     reputation = await scam_service.get_number_reputation(db, phone)
     if not reputation:
-        return {"phone": phone, "risk_score": 0, "is_blacklisted": False, "message": "No reports for this number"}
-    return scam_service._to_jsonable(reputation)
+        # A miss means "nobody has reported this number to Primer", which is not
+        # the same as "this number is safe" — most scam numbers are unreported
+        # until after someone has already lost money. `found` lets a client tell
+        # the two apart, and the message must not read as an all-clear: this is
+        # a public endpoint a citizen may consult mid-call, before deciding
+        # whether to trust the caller.
+        return {
+            "phone": phone,
+            "found": False,
+            "risk_score": 0,
+            "is_blacklisted": False,
+            "message": (
+                "No one has reported this number to Primer. That is not a safety "
+                "guarantee — an unreported number can still be a scam. Stay cautious."
+            ),
+        }
+    return {"found": True, **scam_service._to_jsonable(reputation)}

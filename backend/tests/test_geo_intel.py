@@ -146,8 +146,18 @@ async def test_generate_hotspot_predictions_none_above_threshold(monkeypatch):
     result = await svc.generate_hotspot_predictions(db, BOUNDS, grid_km=5.0, risk_threshold=50)
 
     assert result == []
-    db.execute.assert_not_awaited()  # no per-point crime query is mocked out, so only insert calls would show here
-    db.commit.assert_not_awaited()
+
+    # _crime_counts_near is mocked out, so the only statements reaching the DB
+    # here are the clear-then-insert pair. Nothing cleared the threshold, so the
+    # DELETE runs and no INSERT follows it.
+    assert db.execute.await_count == 1
+    statement = str(db.execute.await_args_list[0].args[0])
+    assert "DELETE FROM geo_intel.predictions" in statement
+
+    # ...and it must still commit. The DELETE shares this transaction, so
+    # skipping the commit on an empty result would roll back the clear and leave
+    # the previous run's now-stale hotspots on the map.
+    db.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio

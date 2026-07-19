@@ -3,21 +3,19 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../constants/colors";
-import { api } from "../hooks/useApi";
+import { api, NOTE_DENOMINATIONS, type NoteDenomination } from "../hooks/useApi";
 import type { ScanStackParamList } from "../App";
 
 type Props = NativeStackScreenProps<ScanStackParamList, "NoteScanner">;
-
-// The model scores authenticity features only — it cannot read the denomination,
-// so the scanner has to tell us which note is in frame.
-const DENOMINATIONS = [10, 20, 50, 100, 200, 500, 2000];
 
 export function NoteScannerScreen({ navigation }: Props) {
     const [permission, requestPermission] = useCameraPermissions();
     const cameraRef = useRef<CameraView>(null);
     const [capturing, setCapturing] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [denomination, setDenomination] = useState(500);
+    // The model scores authenticity features only — it cannot read the
+    // denomination, so the scanner has to tell us which note is in frame.
+    const [denomination, setDenomination] = useState<NoteDenomination>(500);
 
     async function handleCapture() {
         if (!cameraRef.current || capturing) return;
@@ -58,7 +56,7 @@ export function NoteScannerScreen({ navigation }: Props) {
             <View style={styles.controls}>
                 {error && <Text style={styles.error}>{error}</Text>}
                 <View style={styles.denominationRow}>
-                    {DENOMINATIONS.map((value) => (
+                    {NOTE_DENOMINATIONS.map((value) => (
                         <Pressable
                             key={value}
                             style={[styles.denominationChip, value === denomination && styles.denominationChipActive]}

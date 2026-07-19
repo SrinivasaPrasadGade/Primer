@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import Graph from "graphology";
 import Sigma from "sigma";
+import { focusEdge, focusNode } from "./graphFocus";
 import circular from "graphology-layout/circular";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import styles from "@/styles/graph.module.css";
@@ -21,6 +22,7 @@ const NODE_COLORS: Record<string, string> = {
 
 const EDGE_MIN_WIDTH = 1;
 const EDGE_MAX_WIDTH = 6;
+
 
 /**
  * Edge `weight` is a rupee amount, so it can't be used as a pixel width
@@ -80,9 +82,25 @@ function buildGraph(data: GraphData) {
     return graph;
 }
 
+
 // Doc §5.3 types `data` as `any`; we use the real GraphData shape from lib/api.
-export function GraphCanvas({ data, onNodeClick }: { data: GraphData | undefined; onNodeClick: (id: string) => void }) {
+export function GraphCanvas({
+    data,
+    onNodeClick,
+    selectedNodeId = null,
+}: {
+    data: GraphData | undefined;
+    onNodeClick: (id: string) => void;
+    selectedNodeId?: string | null;
+}) {
     const containerRef = useRef<HTMLDivElement>(null);
+    const rendererRef = useRef<Sigma | null>(null);
+
+    // Read by the reducers on every repaint. Held in a ref rather than a
+    // dependency so changing the selection repaints the existing renderer
+    // instead of rebuilding the graph and re-running ForceAtlas2 — which would
+    // throw away the layout and make the canvas jump on every click.
+    const selectedRef = useRef<string | null>(selectedNodeId);
 
     // SWR hands back a fresh object on every revalidation. Rebuilding (and
     // re-running the layout) on identity alone makes the graph jump for no
@@ -109,7 +127,9 @@ export function GraphCanvas({ data, onNodeClick }: { data: GraphData | undefined
         const current = dataRef.current;
         if (!container || !current || signature === null) return;
 
-        const renderer = new Sigma(buildGraph(current), container, {
+        const graph = buildGraph(current);
+
+        const renderer = new Sigma(graph, container, {
             renderEdgeLabels: true,
             defaultNodeColor: "#666",
             defaultEdgeColor: "rgba(255,255,255,0.1)",
@@ -117,9 +137,17 @@ export function GraphCanvas({ data, onNodeClick }: { data: GraphData | undefined
             // happens while the flex parent is still settling. The observer
             // below corrects the size as soon as it is real.
             allowInvalidContainer: true,
+
+            nodeReducer: (node, attrs) => focusNode(graph, selectedRef.current, node, attrs),
+            edgeReducer: (edge, attrs) => focusEdge(graph, selectedRef.current, edge, attrs),
         });
 
+        rendererRef.current = renderer;
+
         renderer.on("clickNode", ({ node }) => onNodeClickRef.current(node));
+        // Clicking empty canvas clears the selection, which is the only way back
+        // to the unfocused view once a node has been picked.
+        renderer.on("clickStage", () => onNodeClickRef.current(""));
 
         // Sigma sizes itself from the container at construction. The container
         // is a flex child of a vh-based parent, so it changes size well after
@@ -134,8 +162,16 @@ export function GraphCanvas({ data, onNodeClick }: { data: GraphData | undefined
         return () => {
             observer.disconnect();
             renderer.kill();
+            rendererRef.current = null;
         };
     }, [signature]);
+
+    // Repaint through the reducers when the selection changes. refresh() re-runs
+    // them against the existing layout, so nothing moves.
+    useEffect(() => {
+        selectedRef.current = selectedNodeId;
+        rendererRef.current?.refresh({ skipIndexation: true });
+    }, [selectedNodeId, signature]);
 
     return <div ref={containerRef} className={styles.graphCanvas} />;
 }

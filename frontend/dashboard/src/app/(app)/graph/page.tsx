@@ -46,7 +46,8 @@ export default function FraudGraphExplorer() {
     }
 
     function handleNodeClick(nodeId: string) {
-        setSelectedNodeId(nodeId);
+        // GraphCanvas sends "" when the officer clicks empty canvas to deselect.
+        setSelectedNodeId(nodeId || null);
         setMoneyFlow(null);
     }
 
@@ -99,7 +100,7 @@ export default function FraudGraphExplorer() {
                             </p>
                         </div>
                     ) : (
-                        <GraphCanvas data={graphData} onNodeClick={handleNodeClick} />
+                        <GraphCanvas data={graphData} onNodeClick={handleNodeClick} selectedNodeId={selectedNodeId} />
                     )}
 
                     <CopilotBar />

@@ -6,7 +6,7 @@ import { Card } from "@/components/shared/Card";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useApi } from "@/hooks/useApi";
-import { api, NoteVerifyResult } from "@/lib/api";
+import { api, NOTE_DENOMINATIONS, NoteDenomination, NoteVerifyResult } from "@/lib/api";
 import styles from "@/styles/dashboard.module.css";
 
 const VERDICT_CLASS: Record<string, string> = {
@@ -14,9 +14,6 @@ const VERDICT_CLASS: Record<string, string> = {
     SUSPECT: styles.verdictSuspect,
     COUNTERFEIT: styles.verdictCounterfeit,
 };
-
-// The model has no denomination head, so the value has to come from the operator.
-const DENOMINATIONS = [10, 20, 50, 100, 200, 500, 2000];
 
 function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -32,7 +29,8 @@ export default function NoteVerifyDashboard() {
     const [preview, setPreview] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
-    const [denomination, setDenomination] = useState(500);
+    // The model has no denomination head, so the value has to come from the operator.
+    const [denomination, setDenomination] = useState<NoteDenomination>(500);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const { data: stats, isLoading: statsLoading, mutate: mutateStats } = useApi("note-stats", () => api.getNoteStats());
@@ -91,10 +89,10 @@ export default function NoteVerifyDashboard() {
                             <select
                                 className={styles.notesDenominationSelect}
                                 value={denomination}
-                                onChange={(e) => setDenomination(Number(e.target.value))}
+                                onChange={(e) => setDenomination(Number(e.target.value) as NoteDenomination)}
                                 disabled={submitting}
                             >
-                                {DENOMINATIONS.map((value) => (
+                                {NOTE_DENOMINATIONS.map((value) => (
                                     <option key={value} value={value}>
                                         ₹{value}
                                     </option>

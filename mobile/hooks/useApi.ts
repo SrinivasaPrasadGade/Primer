@@ -75,7 +75,11 @@ class ApiClient {
         return this.request<T>(path, { method: "POST", body: body !== undefined ? JSON.stringify(body) : undefined }, requireAuth);
     }
 
-    verifyNote = (payload: { image_base64: string; denomination?: number; scan_source?: "mobile" | "web" | "scanner"; lat?: number; lng?: number }) =>
+    // `denomination` is required, and constrained to the values the API accepts.
+    // NoteAuthNet scores authenticity only — it has no denomination head — so the
+    // backend takes this from the caller and rejects anything else with a 422.
+    // Optional here would push that failure to runtime.
+    verifyNote = (payload: { image_base64: string; denomination: NoteDenomination; scan_source?: "mobile" | "web" | "scanner"; lat?: number; lng?: number }) =>
         this.post<NoteVerifyResult>("/note/verify", payload);
 
     scanQR = (qrContent: string) => this.post<QRScanResult>("/qr/scan", { qr_content: qrContent });
@@ -104,6 +108,10 @@ export interface AuthUser {
     designation?: string;
     jurisdiction?: string;
 }
+
+/** Mirrors the `Literal[...]` on NoteVerifyRequest.denomination in the backend. */
+export const NOTE_DENOMINATIONS = [10, 20, 50, 100, 200, 500, 2000] as const;
+export type NoteDenomination = (typeof NOTE_DENOMINATIONS)[number];
 
 export interface NoteVerifyResult {
     id: string;

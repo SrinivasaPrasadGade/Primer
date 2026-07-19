@@ -1,18 +1,23 @@
+/* Shared by .statCard and the loading skeletons that stand in for them. */
 .statGrid {
+    --stat-card-height: 84px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: var(--space-4);
-    margin-bottom: var(--space-8);
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
 }
 
+/* Height is fixed so the loading skeletons match the loaded cards exactly;
+   a mismatch shifts the whole page down the moment stats resolve. */
 .statCard {
     background: var(--color-layer-1);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-lg);
-    padding: var(--space-6);
+    padding: var(--space-4);
+    height: var(--stat-card-height);
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    justify-content: space-between;
 }
 .tone-red { border-color: var(--color-red-border); box-shadow: var(--shadow-red); }
 .tone-amber { border-color: rgba(245, 158, 11, 0.2); }
@@ -25,14 +30,18 @@
     color: var(--color-text-secondary);
 }
 .statLabel {
-    font-size: 12px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 .statValue {
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
     font-family: var(--font-mono);
+    line-height: 1;
+    /* Digits share a width, so the four cards' numbers line up with each other
+       and don't reflow as the feed polls. */
+    font-variant-numeric: tabular-nums;
 }
 
 .sectionTitle {
@@ -104,8 +113,15 @@
     max-height: 360px;
     overflow-y: auto;
 }
+/* Fixed columns rather than flex: the badge and phone number vary in width, so
+   a flex row leaves the scam type and confidence ragged and the list has to be
+   read one row at a time instead of scanned down a column. */
 .alertRow {
-    display: flex;
+    display: grid;
+    /* `auto` on the badge resolves to one width shared by every row (the widest
+       label, YELLOW), so the column aligns without hardcoding a size that would
+       clip if a label changed. */
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) 52px;
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-3);
@@ -118,16 +134,23 @@
 .alertPhone {
     font-family: var(--font-mono);
     font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .alertType {
-    flex: 1;
     color: var(--color-text-secondary);
     font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .alertConfidence {
     font-family: var(--font-mono);
     font-size: 12px;
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
 }
 .emptyState {
     color: var(--color-text-tertiary);
