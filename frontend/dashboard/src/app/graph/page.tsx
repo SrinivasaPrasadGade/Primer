@@ -3,6 +3,7 @@ import { FormEvent, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { GraphCanvas } from "@/components/graph/GraphCanvas";
 import { EntityPanel } from "@/components/graph/EntityPanel";
+import { MoneyFlowPanel } from "@/components/graph/MoneyFlowPanel";
 import { CopilotBar } from "@/components/graph/CopilotBar";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useApi } from "@/hooks/useApi";
@@ -14,7 +15,7 @@ export default function FraudGraphExplorer() {
     const [results, setResults] = useState<GraphSearchResult[]>([]);
     const [selected, setSelected] = useState<GraphSearchResult | null>(null);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-    const [moneyFlow, setMoneyFlow] = useState<MoneyFlowEdge[] | null>(null);
+    const [moneyFlow, setMoneyFlow] = useState<{ nodeId: string; edges: MoneyFlowEdge[] } | null>(null);
     const [searchError, setSearchError] = useState<string | null>(null);
 
     const { data: graphData, error: graphError, isLoading } = useApi(
@@ -38,10 +39,15 @@ export default function FraudGraphExplorer() {
     async function handleViewMoneyFlow(nodeId: string) {
         try {
             const flow = await api.getMoneyFlow(nodeId);
-            setMoneyFlow(flow);
+            setMoneyFlow({ nodeId, edges: flow });
         } catch {
-            setMoneyFlow([]);
+            setMoneyFlow({ nodeId, edges: [] });
         }
+    }
+
+    function handleNodeClick(nodeId: string) {
+        setSelectedNodeId(nodeId);
+        setMoneyFlow(null);
     }
 
     const selectedNode = graphData?.nodes.find((n) => n.id === selectedNodeId) ?? null;
@@ -93,7 +99,7 @@ export default function FraudGraphExplorer() {
                             </p>
                         </div>
                     ) : (
-                        <GraphCanvas data={graphData} onNodeClick={setSelectedNodeId} />
+                        <GraphCanvas data={graphData} onNodeClick={handleNodeClick} />
                     )}
 
                     <CopilotBar />
@@ -101,15 +107,7 @@ export default function FraudGraphExplorer() {
 
                 <div>
                     <EntityPanel node={selectedNode} onViewMoneyFlow={handleViewMoneyFlow} />
-                    {moneyFlow && moneyFlow.length > 0 && (
-                        <div style={{ marginTop: 16 }}>
-                            {moneyFlow.map((edge) => (
-                                <div key={edge.id} style={{ fontSize: 12, padding: "8px 0", borderBottom: "1px solid var(--color-border-subtle)" }}>
-                                    {edge.from_entity} → {edge.to_entity} · ₹{edge.amount}
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    {moneyFlow && <MoneyFlowPanel edges={moneyFlow.edges} nodeId={moneyFlow.nodeId} />}
                 </div>
             </div>
         </>
