@@ -9,6 +9,8 @@ import base64
 import binascii
 from uuid import UUID
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,16 +25,16 @@ MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10MB — generous for a phone-camera note 
 
 
 class NoteVerifyRequest(BaseModel):
-    """Matches the TRD §3.3 / mobile contract: base64 image + denomination hint.
+    """Matches the TRD §3.3 / mobile contract: base64 image + denomination.
 
     `expo-camera` and the web dashboard both hand back a base64 string (optionally a
     `data:image/...;base64,` data URL), so JSON is the natural transport rather than a
-    multipart file upload. denomination defaults to 500 (the most common demo note)
-    since the TRD marks it a hint, not required.
+    multipart file upload. NoteAuthNet has no denomination head — it only scores
+    authenticity features — so the caller must state which note it photographed.
     """
 
     image_base64: str = Field(..., min_length=1)
-    denomination: int = 500
+    denomination: Literal[10, 20, 50, 100, 200, 500, 2000]
     serial_number: str | None = None
     scan_source: str = "mobile"
     lat: float | None = None

@@ -96,7 +96,7 @@ Role column: **any** = any logged-in user; **public** = no token needed.
 ```jsonc
 // POST /note/verify  — matches your api.ts verifyNote()
 { "image_base64": "<base64 or data:image/jpeg;base64,...>",
-  "denomination": 500,          // optional, defaults 500
+  "denomination": 500,          // required: 10|20|50|100|200|500|2000 (model can't infer it)
   "serial_number": "9AB123456", // optional
   "scan_source": "mobile",      // "mobile" | "web" | "scanner"
   "lat": 19.07, "lng": 72.87 }  // optional

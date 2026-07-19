@@ -15,6 +15,9 @@ const VERDICT_CLASS: Record<string, string> = {
     COUNTERFEIT: styles.verdictCounterfeit,
 };
 
+// The model has no denomination head, so the value has to come from the operator.
+const DENOMINATIONS = [10, 20, 50, 100, 200, 500, 2000];
+
 function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -29,6 +32,7 @@ export default function NoteVerifyDashboard() {
     const [preview, setPreview] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
+    const [denomination, setDenomination] = useState(500);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const { data: stats, isLoading: statsLoading, mutate: mutateStats } = useApi("note-stats", () => api.getNoteStats());
@@ -42,7 +46,7 @@ export default function NoteVerifyDashboard() {
         setPreview(base64);
         setSubmitting(true);
         try {
-            const result = await api.verifyNote({ image_base64: base64, scan_source: "web" });
+            const result = await api.verifyNote({ image_base64: base64, denomination, scan_source: "web" });
             setLatest(result);
             mutateStats();
             mutateHistory();
@@ -82,6 +86,21 @@ export default function NoteVerifyDashboard() {
                                 <span>Upload a currency note photo</span>
                             </div>
                         )}
+                        <label className={styles.notesDenomination}>
+                            Denomination
+                            <select
+                                className={styles.notesDenominationSelect}
+                                value={denomination}
+                                onChange={(e) => setDenomination(Number(e.target.value))}
+                                disabled={submitting}
+                            >
+                                {DENOMINATIONS.map((value) => (
+                                    <option key={value} value={value}>
+                                        ₹{value}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
                         <button className={styles.notesUploadButton} onClick={() => inputRef.current?.click()} disabled={submitting}>
                             {submitting ? "Analyzing…" : "Choose Image"}
                         </button>

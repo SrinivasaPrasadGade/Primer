@@ -8,11 +8,16 @@ import type { ScanStackParamList } from "../App";
 
 type Props = NativeStackScreenProps<ScanStackParamList, "NoteScanner">;
 
+// The model scores authenticity features only — it cannot read the denomination,
+// so the scanner has to tell us which note is in frame.
+const DENOMINATIONS = [10, 20, 50, 100, 200, 500, 2000];
+
 export function NoteScannerScreen({ navigation }: Props) {
     const [permission, requestPermission] = useCameraPermissions();
     const cameraRef = useRef<CameraView>(null);
     const [capturing, setCapturing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [denomination, setDenomination] = useState(500);
 
     async function handleCapture() {
         if (!cameraRef.current || capturing) return;
@@ -21,7 +26,11 @@ export function NoteScannerScreen({ navigation }: Props) {
         try {
             const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.7 });
             if (!photo?.base64) throw new Error("Could not capture photo");
-            const result = await api.verifyNote({ image_base64: `data:image/jpeg;base64,${photo.base64}`, scan_source: "mobile" });
+            const result = await api.verifyNote({
+                image_base64: `data:image/jpeg;base64,${photo.base64}`,
+                denomination,
+                scan_source: "mobile",
+            });
             navigation.navigate("ScanResult", { result });
         } catch (err) {
             setError(err instanceof Error ? err.message : "Verification failed");
@@ -48,6 +57,20 @@ export function NoteScannerScreen({ navigation }: Props) {
             <CameraView ref={cameraRef} style={styles.camera} facing="back" />
             <View style={styles.controls}>
                 {error && <Text style={styles.error}>{error}</Text>}
+                <View style={styles.denominationRow}>
+                    {DENOMINATIONS.map((value) => (
+                        <Pressable
+                            key={value}
+                            style={[styles.denominationChip, value === denomination && styles.denominationChipActive]}
+                            onPress={() => setDenomination(value)}
+                            disabled={capturing}
+                        >
+                            <Text style={[styles.denominationText, value === denomination && styles.denominationTextActive]}>
+                                ₹{value}
+                            </Text>
+                        </Pressable>
+                    ))}
+                </View>
                 <Pressable style={styles.captureButton} onPress={handleCapture} disabled={capturing}>
                     {capturing ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Capture Note</Text>}
                 </Pressable>
@@ -62,6 +85,17 @@ const styles = StyleSheet.create({
     center: { alignItems: "center", justifyContent: "center", padding: spacing.xl, gap: spacing.lg },
     message: { color: colors.textSecondary, fontSize: 14, textAlign: "center" },
     controls: { padding: spacing.lg, gap: spacing.sm },
+    denominationRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "center" },
+    denominationChip: {
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.accent500,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+    },
+    denominationChipActive: { backgroundColor: colors.accent500 },
+    denominationText: { color: colors.accent500, fontSize: 13, fontWeight: "600" },
+    denominationTextActive: { color: "#fff" },
     captureButton: {
         backgroundColor: colors.accent500,
         borderRadius: radius.md,
