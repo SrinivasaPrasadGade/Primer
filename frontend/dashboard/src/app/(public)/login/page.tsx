@@ -19,7 +19,7 @@ export default function LoginPage() {
         setSubmitting(true);
         try {
             const user = await login(email, password);
-            router.push(user.role === "bank_manager" ? "/notes" : "/");
+            router.push(user.role === "bank_manager" ? "/notes" : "/dashboard");
         } catch (err) {
             setError(err instanceof ApiError ? err.message : "Unable to sign in. Try again.");
         } finally {
