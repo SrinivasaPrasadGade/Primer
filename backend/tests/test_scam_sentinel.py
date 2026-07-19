@@ -333,6 +333,7 @@ async def test_process_scam_session_happy_path(monkeypatch):
         "voice_synthetic_probability": 0.9,
         "spoofing_detected": True,
         "real_originating_number": "+861112223333",
+        "status": "active",
     }
     reputation_row = {"phone_number": "+911234567890", "risk_score": 50, "total_complaints": 3, "total_flags": 5}
 
@@ -362,3 +363,66 @@ async def test_process_scam_session_happy_path(monkeypatch):
     assert result["alert_level"] == "RED"
     assert result["overall_confidence"] == 90.0
     assert db.commit.await_count == 2
+    assert result["reputation_updated"] is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", ["classified", "acknowledged", "investigating", "closed"])
+async def test_reclassification_does_not_accrue_reputation(monkeypatch, status):
+    """Re-running classification must not bump the caller's reputation.
+
+    risk_score / total_complaints / total_flags are classifier *inputs*, so accruing
+    them on every run feeds each classification's own output back in and confidence
+    ratchets upward with each click. Only a session's first classification counts.
+    """
+    session_id = uuid4()
+    session_row = {
+        "id": session_id,
+        "caller_number": "+911234567890",
+        "callee_number": "+919876543210",
+        "call_start": datetime(2026, 7, 8, 11, 0, 0),
+        "spoofing_detected": True,
+        "status": status,
+    }
+    reputation_row = {"phone_number": "+911234567890", "risk_score": 50, "total_complaints": 3, "total_flags": 5}
+
+    db = AsyncMock()
+    # Only 3 execute() calls now — no reputation upsert on a re-run.
+    db.execute.side_effect = [
+        FakeResult(row=session_row),
+        FakeResult(row=reputation_row),
+        FakeResult(row=None),
+    ]
+
+    seen_inputs = {}
+
+    async def fake_compute_signal_scores(enriched):
+        seen_inputs.update(
+            {
+                "caller_risk_score": enriched["caller_risk_score"],
+                "caller_complaint_count": enriched["caller_complaint_count"],
+                "call_count_from_number_24h": enriched["call_count_from_number_24h"],
+            }
+        )
+        return {
+            "call_flow_match": {"score": 0.9, "explanation": "x"},
+            "number_spoofing": {"score": 0.9, "explanation": "x"},
+            "script_similarity": {"score": 0.9, "explanation": "x"},
+            "voice_synthetic": {"score": 0.9, "explanation": "x"},
+            "urgency_phrases": {"score": 0.9, "explanation": "x"},
+        }
+
+    monkeypatch.setattr(svc, "compute_signal_scores", fake_compute_signal_scores)
+
+    result = await svc.process_scam_session(db, session_id)
+
+    assert result["reputation_updated"] is False
+    # One commit for the session row; none for a reputation upsert that must not happen.
+    assert db.commit.await_count == 1
+    assert db.execute.await_count == 3
+    # The classifier saw the stored reputation untouched, so a second run sees it again.
+    assert seen_inputs == {
+        "caller_risk_score": 50,
+        "caller_complaint_count": 3,
+        "call_count_from_number_24h": 5,
+    }

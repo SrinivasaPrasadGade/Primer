@@ -445,13 +445,20 @@ async def get_number_reputation(db: AsyncSession, phone_number: str) -> dict | N
     return dict(row) if row else None
 
 
+SEVERITY_BUMP = {"RED": 25, "AMBER": 12, "YELLOW": 4, "NONE": 0}
+
+
 async def update_number_reputation(db: AsyncSession, phone_number: str, alert_level: str) -> dict:
     """Upsert a number's reputation after a session is classified.
 
     risk_score climbs with flag frequency and severity, capped at 100 — a RED session
     weighs more than AMBER/YELLOW since it reflects much higher model confidence.
+
+    Accrual is per *session*, not per classification run: risk_score, total_flags and
+    total_complaints are all classifier inputs, so calling this for a session that has
+    already been counted feeds the model its own output. See process_scam_session().
     """
-    severity_bump = {"RED": 25, "AMBER": 12, "YELLOW": 4, "NONE": 0}.get(alert_level, 0)
+    severity_bump = SEVERITY_BUMP.get(alert_level, 0)
     is_scam_flag = int(alert_level in ("RED", "AMBER"))
 
     row = (
@@ -508,6 +515,11 @@ async def process_scam_session(db: AsyncSession, session_id: UUID) -> dict:
     if not session:
         raise ValueError(f"Scam session {session_id} not found")
 
+    # 'active' is the only pre-classification status; everything else ('classified',
+    # 'acknowledged', 'investigating', 'closed') means this session has already been
+    # scored and has already contributed to its caller's reputation.
+    first_classification = session.get("status", "active") == "active"
+
     caller_reputation = await get_number_reputation(db, session["caller_number"])
     enriched = {
         **session,
@@ -537,13 +549,20 @@ async def process_scam_session(db: AsyncSession, session_id: UUID) -> dict:
         },
     )
     await db.commit()
-    await update_number_reputation(db, session["caller_number"], alert_level)
+
+    # Only accrue on the first classification. caller_risk_score, caller_complaint_count
+    # and call_count_from_number_24h are all classifier inputs read above, so bumping
+    # them on every re-run feeds each classification's own output back in as input and
+    # confidence ratchets upward with each click. Re-running is now a read-only rescore.
+    if first_classification:
+        await update_number_reputation(db, session["caller_number"], alert_level)
 
     return {
         "session_id": str(session_id),
         "alert_level": alert_level,
         "overall_confidence": overall_confidence,
         "signal_scores": signals,
+        "reputation_updated": first_classification,
     }
 
 

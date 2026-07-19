@@ -270,6 +270,13 @@ Data for Primer falls into three categories:
 cd ml/data_generation
 python generate_seed.py
 psql $env:DATABASE_URL -f ..\..\backend\seed_data\01_seed.sql
+
+# Populate geo_intel.predictions — the generator below does not write that table,
+# so without this the Geo Intel map reports 0 predicted hotspots. Must run AFTER
+# the seed load: the model scores grid points from nearby incident counts, so on an
+# unseeded database every point scores low and nothing is stored. Idempotent.
+cd ..\..\backend
+python -m scripts.bootstrap_predictions
 ```
 
 This script generates **500 scam sessions** (plus everything below) with distributions matched to NCRB cybercrime statistics.
