@@ -13,6 +13,9 @@ class CopilotQueryRequest(BaseModel):
 
 
 class CopilotQueryResponse(BaseModel):
+    # False when the model backend was unreachable — the answer is a status message,
+    # not a finding, and the UI must not present it as one.
+    available: bool = True
     answer: str
     data: list[dict]
     sources: list[str]

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services import correlation as correlation_service
 from app.services.gemini_client import GeminiError, run_with_tools
+from app.services.phone import normalize_phone
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,15 @@ complaints, phone numbers, bank accounts, UPI IDs, and fraud clusters.
 Call the most relevant tool to look up real data before answering — never guess at
 facts or invent figures. You may call more than one tool if the question requires it.
 Once you have enough data, answer concisely and cite which entity or record it came
-from. If no tool applies to the question, say so plainly instead of speculating."""
+from. If no tool applies to the question, say so plainly instead of speculating.
+
+When a tool returns "found": false, that means the entity is ABSENT FROM PRIMER'S
+RECORDS. It does NOT mean the entity is safe, clean, legitimate, or cleared. Never
+describe an unknown entity as clean or not a scammer. Say that Primer holds no record
+of it, and that absence of a record is not evidence of absence of fraud. Before
+concluding a phone number is unknown, check both search_entity and
+check_number_reputation — a number can be in the reputation registry without being in
+the fraud graph, and vice versa."""
 
 _ENTITY_TYPES = ["phone_number", "bank_account", "upi_id", "person", "device", "ip_address"]
 
@@ -121,7 +130,15 @@ def _jsonable(value: Any) -> Any:
     return json.loads(json.dumps(value, default=str))
 
 
+_NOT_IN_RECORDS = (
+    "Primer holds no record of this identifier. This is NOT a clean or safe verdict — "
+    "it only means nothing has been reported to this platform."
+)
+
+
 async def _find_entity(db: AsyncSession, entity_type: str, entity_value: str) -> dict | None:
+    if entity_type == "phone_number":
+        entity_value = normalize_phone(entity_value)
     row = (
         await db.execute(
             text(
@@ -141,7 +158,12 @@ async def _find_entity(db: AsyncSession, entity_type: str, entity_value: str) ->
 async def search_entity(db: AsyncSession, entity_type: str, entity_value: str) -> dict:
     entity = await _find_entity(db, entity_type, entity_value)
     if not entity:
-        return {"found": False, "entity_type": entity_type, "entity_value": entity_value}
+        return {
+            "found": False,
+            "entity_type": entity_type,
+            "entity_value": entity_value,
+            "note": _NOT_IN_RECORDS,
+        }
     return {"found": True, **entity}
 
 
@@ -231,6 +253,7 @@ async def get_cluster_loss(db: AsyncSession, entity_type: str, entity_value: str
 
 
 async def check_number_reputation(db: AsyncSession, phone_number: str) -> dict:
+    phone_number = normalize_phone(phone_number)
     row = (
         await db.execute(
             text(
@@ -245,7 +268,7 @@ async def check_number_reputation(db: AsyncSession, phone_number: str) -> dict:
         )
     ).mappings().first()
     if not row:
-        return {"found": False, "phone_number": phone_number}
+        return {"found": False, "phone_number": phone_number, "note": _NOT_IN_RECORDS}
     return {"found": True, **dict(row)}
 
 
@@ -290,7 +313,12 @@ async def process_query(db: AsyncSession, question: str) -> dict:
     except GeminiError as exc:
         logger.warning("Copilot query failed: %s", exc)
         return {
-            "answer": "The AI Copilot is temporarily unavailable. Please try again shortly.",
+            "available": False,
+            "answer": (
+                "The AI Copilot is unavailable — the Gemini API is not reachable "
+                "(check that GEMINI_API_KEY is set on the backend). No records were "
+                "searched, so this is not a result about your query."
+            ),
             "data": [],
             "sources": [],
             "query_executed": [],
@@ -298,6 +326,7 @@ async def process_query(db: AsyncSession, question: str) -> dict:
 
     tool_calls = result["tool_calls"]
     return {
+        "available": True,
         "answer": result["answer"],
         "data": [call["result"] for call in tool_calls],
         "sources": [call["name"] for call in tool_calls] or ["gemini"],

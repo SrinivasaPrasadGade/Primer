@@ -15,8 +15,13 @@ const ENTITY_TYPES = ["phone_number", "bank_account", "upi_id", "person", "devic
 function detectEntity(text: string): { type: string; value: string } | null {
     const upi = text.match(/[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}/);
     if (upi) return { type: "upi_id", value: upi[0] };
+    // Phone numbers are stored E.164 (+91XXXXXXXXXX); stripping the "+" and country
+    // code here produced a lookup that never matched, so every case came back empty.
     const phone = text.match(/(?:\+?91[\s-]?)?[6-9]\d{9}/);
-    if (phone) return { type: "phone_number", value: phone[0].replace(/[\s+-]/g, "") };
+    if (phone) {
+        const digits = phone[0].replace(/\D/g, "");
+        return { type: "phone_number", value: `+91${digits.slice(-10)}` };
+    }
     const account = text.match(/\b\d{9,18}\b/);
     if (account) return { type: "bank_account", value: account[0] };
     return null;
@@ -116,6 +121,12 @@ export default function CaseSummarizerPage() {
             {summary && !loading && (
                 <div style={{ marginTop: 24 }}>
                     <Card>
+                        {summary.confidence_score === 0 && (
+                            <p role="alert" style={{ color: "var(--color-red)", fontSize: 13, marginBottom: 12 }}>
+                                AI summarization did not run — the evidence was recorded but not analysed. Treat the
+                                text below as incomplete, not as a finding.
+                            </p>
+                        )}
                         <p className={styles.caseSummaryText}>{summary.summary_text}</p>
                         <p style={{ fontSize: 12, color: "var(--color-text-tertiary)", marginBottom: 24 }}>Confidence: {summary.confidence_score}%</p>
 
@@ -136,7 +147,8 @@ export default function CaseSummarizerPage() {
                                 <p className={styles.caseSectionTitle}>Suspects</p>
                                 {summary.suspects_json.map((s, i) => (
                                     <div key={i} className={styles.caseSuspectRow}>
-                                        <span>{s.name}</span>
+                                        {/* The summarizer emits `identifier`; older records used `name`. */}
+                                        <span>{s.identifier ?? s.name ?? "—"}</span>
                                         <span style={{ color: "var(--color-text-tertiary)" }}>{s.role}</span>
                                     </div>
                                 ))}

@@ -1,5 +1,9 @@
 import { API_V1, AuthUser, TOKEN_STORAGE_KEY } from "./constants";
 
+const DEFAULT_TIMEOUT_MS = 30_000;
+// LLM-backed endpoints do real work per request and are legitimately slower.
+const AI_TIMEOUT_MS = 90_000;
+
 export class ApiError extends Error {
     status: number;
     constructor(status: number, detail: string) {
@@ -34,15 +38,32 @@ class ApiClient {
         return this.token;
     }
 
-    private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
-        const res = await fetch(`${API_V1}${path}`, {
-            ...options,
-            headers: {
-                "Content-Type": "application/json",
-                ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
-                ...options.headers,
-            },
-        });
+    private async request<T>(path: string, options: RequestInit & { timeoutMs?: number } = {}): Promise<T> {
+        // Without a deadline a stalled request leaves the caller's `loading` state
+        // set forever, which reads as a spinner that never resolves.
+        const { timeoutMs = DEFAULT_TIMEOUT_MS, ...init } = options;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+        let res: Response;
+        try {
+            res = await fetch(`${API_V1}${path}`, {
+                ...init,
+                signal: controller.signal,
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+                    ...init.headers,
+                },
+            });
+        } catch (err) {
+            if (err instanceof DOMException && err.name === "AbortError") {
+                throw new ApiError(408, `Request timed out after ${Math.round(timeoutMs / 1000)}s. The server may be unreachable.`);
+            }
+            throw err;
+        } finally {
+            clearTimeout(timer);
+        }
         if (!res.ok) {
             let detail = res.statusText;
             try {
@@ -60,8 +81,12 @@ class ApiClient {
     private get<T>(path: string) {
         return this.request<T>(path, { method: "GET" });
     }
-    private post<T>(path: string, body?: unknown) {
-        return this.request<T>(path, { method: "POST", body: body !== undefined ? JSON.stringify(body) : undefined });
+    private post<T>(path: string, body?: unknown, timeoutMs?: number) {
+        return this.request<T>(path, {
+            method: "POST",
+            body: body !== undefined ? JSON.stringify(body) : undefined,
+            timeoutMs,
+        });
     }
 
     // Auth
@@ -123,10 +148,18 @@ class ApiClient {
 
     // Extra features
     askCopilot = (question: string) =>
-        this.post<{ answer: string; data: unknown; sources: unknown; query_executed?: string }>("/copilot/query", { question });
+        this.post<{ available?: boolean; answer: string; data: unknown; sources: unknown; query_executed?: string }>(
+            "/copilot/query",
+            { question },
+            AI_TIMEOUT_MS,
+        );
     scanQR = (qrContent: string) => this.post("/qr/scan", { qr_content: qrContent });
     summarizeCase = (entityType: string, entityValue: string, investigationId?: string | null) =>
-        this.post<CaseSummary>("/case/summarize", { entity_type: entityType, entity_value: entityValue, investigation_id: investigationId ?? null });
+        this.post<CaseSummary>(
+            "/case/summarize",
+            { entity_type: entityType, entity_value: entityValue, investigation_id: investigationId ?? null },
+            AI_TIMEOUT_MS,
+        );
     triggerPanic = (payload: {
         caller_number?: string;
         call_duration_sec?: number;
@@ -229,7 +262,7 @@ export interface CaseSummary {
     investigation_id: string | null;
     summary_text: string;
     timeline_json: Array<{ date?: string; event?: string; [key: string]: unknown }>;
-    suspects_json: Array<{ name?: string; role?: string; [key: string]: unknown }>;
+    suspects_json: Array<{ identifier?: string; name?: string; role?: string; [key: string]: unknown }>;
     related_complaints: string[];
     confidence_score: number;
     source_evidence: string[];
