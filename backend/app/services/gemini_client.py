@@ -14,6 +14,14 @@ DEFAULT_TEMPERATURE = 0.3
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 1.5
 
+# Per-attempt deadline. The SDK call runs in a worker thread and does not reliably
+# time out on its own, so without this a stalled HTTPS connection blocks the awaiting
+# request forever and the caller's spinner never resolves.
+ATTEMPT_TIMEOUT_SECONDS = 20.0
+# Ceiling across all attempts + backoff. Kept under the dashboard's 90s client-side
+# abort so the API returns a real error rather than having the browser give up first.
+TOTAL_TIMEOUT_SECONDS = 75.0
+
 _configured = False
 
 
@@ -64,16 +72,41 @@ def _build_model(
 
 
 async def _call_with_retries(call):
+    """Run `call` in a worker thread, retrying transient API errors under a deadline.
+
+    Every attempt is bounded by ATTEMPT_TIMEOUT_SECONDS and the whole loop by
+    TOTAL_TIMEOUT_SECONDS. A timed-out attempt is treated as a retryable failure.
+
+    Caveat: asyncio cannot cancel a thread, so a hung SDK call keeps occupying its
+    worker until the process exits — but the request stops waiting on it, which is
+    what turns an infinite spinner into an error the UI can show.
+    """
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + TOTAL_TIMEOUT_SECONDS
     last_error: Exception | None = None
+
     for attempt in range(1, MAX_RETRIES + 1):
+        remaining = deadline - loop.time()
+        if remaining <= 0:
+            break
         try:
-            return await asyncio.to_thread(call)
+            return await asyncio.wait_for(
+                asyncio.to_thread(call), timeout=min(ATTEMPT_TIMEOUT_SECONDS, remaining)
+            )
+        except asyncio.TimeoutError as exc:
+            last_error = exc
+            logger.warning(
+                "Gemini call timed out after %ss (attempt %s/%s)", ATTEMPT_TIMEOUT_SECONDS, attempt, MAX_RETRIES
+            )
         except (ResourceExhausted, GoogleAPICallError) as exc:
             last_error = exc
             logger.warning("Gemini call failed (attempt %s/%s): %s", attempt, MAX_RETRIES, exc)
-            if attempt < MAX_RETRIES:
-                await asyncio.sleep(RETRY_BACKOFF_SECONDS * attempt)
-    raise GeminiError(f"Gemini API call failed after {MAX_RETRIES} attempts") from last_error
+
+        backoff = RETRY_BACKOFF_SECONDS * attempt
+        if attempt < MAX_RETRIES and loop.time() + backoff < deadline:
+            await asyncio.sleep(backoff)
+
+    raise GeminiError(f"Gemini API call failed or timed out after {MAX_RETRIES} attempts") from last_error
 
 
 async def generate(
