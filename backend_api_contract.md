@@ -14,6 +14,7 @@ cd backend
 source .venv/bin/activate            # or your venv
 alembic upgrade head                  # creates schema + seeds the 3 demo users
 psql "$DATABASE_URL" -f seed_data/00_extensions.sql -f seed_data/01_seed.sql
+python -m scripts.bootstrap_predictions   # runs the hotspot model over the demo bounds
 uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
 ```
 
@@ -21,6 +22,12 @@ uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
 > Without it, uvicorn also watches your `.venv/`, so every import in every installed
 > package (torch, sklearn, sqlalchemy, ...) can trigger a spurious full reload —
 > harmless, but it buries your actual request logs in noise.
+
+> `scripts.bootstrap_predictions` must run **after** `01_seed.sql` — the model scores
+> each grid point from nearby incident counts, so on an unseeded database every point
+> scores low and nothing is stored. It's idempotent, so re-run it any time. Skipping it
+> is not fatal: the Geo Intel map just shows 0 predicted hotspots until an LEA officer
+> clicks "Run forecast for this view".
 
 - **Base URL:** `http://localhost:8000`
 - **All endpoints below are under `/api/v1`** (matches your `lib/api.ts` `API_BASE + "/api/v1"`).

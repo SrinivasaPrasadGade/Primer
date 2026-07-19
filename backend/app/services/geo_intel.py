@@ -170,6 +170,22 @@ async def generate_hotspot_predictions(
     if not points:
         return []
 
+    # Regenerating for the same day and viewport replaces that day's predictions rather
+    # than stacking a second set on top of them. There's no unique constraint on
+    # (prediction_date, center_point), so without this every re-run duplicates rows and
+    # the map accumulates overlapping circles.
+    await db.execute(
+        text(
+            """
+            DELETE FROM geo_intel.predictions
+            WHERE prediction_date = :pdate
+              AND ST_Within(center_point, ST_MakeEnvelope(:west, :south, :east, :north, 4326))
+              AND ((:crime_type)::varchar IS NULL OR crime_type = :crime_type)
+            """
+        ),
+        {"pdate": today, "crime_type": crime_type, **bounds},
+    )
+
     features = []
     for lat, lng in points:
         counts = await _crime_counts_near(db, lat, lng, radius_km=grid_km)
@@ -214,8 +230,9 @@ async def generate_hotspot_predictions(
         ).mappings().first()
         predictions.append(dict(row))
 
-    if predictions:
-        await db.commit()
+    # Commit unconditionally — the DELETE above is part of this transaction, so
+    # skipping the commit on an empty result would silently discard it too.
+    await db.commit()
     return _to_jsonable(predictions)
 
 

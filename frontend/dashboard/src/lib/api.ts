@@ -135,8 +135,14 @@ class ApiClient {
         this.get<GeoIncident[]>(`/geo/incidents${qs({ bounds, type, limit })}`);
     getPredictions = (bounds: string, predictionDate?: string) =>
         this.get<HotspotPrediction[]>(`/geo/predictions${qs({ bounds, prediction_date: predictionDate })}`);
+    // Scores a grid of points with the hotspot model, one DB round trip per point —
+    // legitimately slower than a normal request.
     generatePredictions = (bounds: string, type?: string, gridKm?: number, riskThreshold?: number) =>
-        this.post(`/geo/predictions/generate${qs({ bounds, type, grid_km: gridKm, risk_threshold: riskThreshold })}`);
+        this.post<HotspotPrediction[]>(
+            `/geo/predictions/generate${qs({ bounds, type, grid_km: gridKm, risk_threshold: riskThreshold })}`,
+            undefined,
+            AI_TIMEOUT_MS,
+        );
     getGeoStats = () => this.get("/geo/stats");
 
     // Citizen Shield
