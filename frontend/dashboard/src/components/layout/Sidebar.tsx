@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import styles from "@/styles/layout.module.css";
 
 const NAV_ITEMS = [
-    { href: "/", label: "Dashboard", icon: Home },
+    { href: "/dashboard", label: "Dashboard", icon: Home },
     { href: "/scam", label: "Scam Sentinel", icon: PhoneCall },
     { href: "/notes", label: "Note Verify", icon: Landmark },
     { href: "/graph", label: "Fraud Graph", icon: Share2 },
@@ -24,7 +24,7 @@ export function Sidebar() {
     return (
         <nav className={styles.sidebar}>
             {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-                const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+                const active = pathname === href || pathname.startsWith(`${href}/`);
                 return (
                     <Link key={href} href={href} className={`${styles.navItem} ${active ? styles.navItemActive : ""}`}>
                         <Icon size={17} />

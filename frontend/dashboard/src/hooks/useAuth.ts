@@ -13,6 +13,13 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Routes in the (public) group — reachable without a session. */
+const PUBLIC_PATHS = ["/", "/login"];
+
+function isPublicPath(pathname: string) {
+    return PUBLIC_PATHS.includes(pathname);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
@@ -40,9 +47,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .finally(() => setLoading(false));
     }, []);
 
-    // Redirect unauthenticated users to /login (folded in from the old AppShell)
     useEffect(() => {
-        if (!loading && !user && pathname !== "/login") router.replace("/login");
+        if (loading) return;
+        // Public routes render for anyone; everything else requires a session.
+        if (!user) {
+            if (!isPublicPath(pathname)) router.replace("/login");
+            return;
+        }
+        // A signed-in officer has no use for the marketing page. /login is left
+        // alone so the login screen's own role-based redirect can run without
+        // racing this one.
+        if (pathname === "/") router.replace("/dashboard");
     }, [loading, user, pathname, router]);
 
     async function login(email: string, password: string) {
