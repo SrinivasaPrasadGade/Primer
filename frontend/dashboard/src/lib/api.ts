@@ -182,7 +182,24 @@ class ApiClient {
         location?: { lat: number; lng: number };
         emergency_contact_number?: string;
     }) => this.post("/panic/trigger", payload);
+    getPanicEvents = (limit?: number) => this.get<PanicEvent[]>(`/panic/events${qs({ limit })}`);
     screenNumber = (phone: string) => this.get(`/screen/number/${encodeURIComponent(phone)}`);
+}
+
+export interface PanicEvent {
+    id: string;
+    user_id: string | null;
+    user_name: string | null;
+    user_email: string | null;
+    caller_number: string | null;
+    call_duration_sec: number | null;
+    location: { lat: number; lng: number } | null;
+    emergency_contact_notified: boolean;
+    emergency_contact_number: string | null;
+    fraud_report_generated: boolean;
+    fraud_report_url: string | null;
+    device_info: Record<string, unknown> | null;
+    triggered_at: string;
 }
 
 export interface SignalScore {

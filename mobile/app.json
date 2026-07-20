@@ -27,6 +27,12 @@
         {
           "cameraPermission": "Primer needs camera access to scan currency notes and QR codes."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Primer shares your location with law enforcement when you trigger the panic button."
+        }
       ]
     ]
   }

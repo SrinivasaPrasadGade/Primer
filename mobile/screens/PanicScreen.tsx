@@ -2,22 +2,51 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { AlertTriangle, X } from "lucide-react-native";
+import * as Location from "expo-location";
 import { colors, radius, spacing } from "../constants/colors";
 import { api, PanicResult } from "../hooks/useApi";
 import type { RootStackParamList } from "../App";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Panic">;
 
+/** Never let a slow GPS fix hold up the SOS itself. */
+const LOCATION_TIMEOUT_MS = 5000;
+
+/**
+ * Best-effort coordinates. Returns undefined if permission is denied, the device
+ * can't get a fix, or it takes too long — the alert still goes out either way,
+ * because an SOS without a location beats an SOS that never sends.
+ */
+async function getLocation(): Promise<{ lat: number; lng: number } | undefined> {
+    try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") return undefined;
+
+        const position = await Promise.race([
+            Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), LOCATION_TIMEOUT_MS)),
+        ]);
+        if (!position) return undefined;
+
+        return { lat: position.coords.latitude, lng: position.coords.longitude };
+    } catch {
+        return undefined;
+    }
+}
+
 export function PanicScreen({ navigation }: Props) {
     const [triggering, setTriggering] = useState(false);
     const [result, setResult] = useState<PanicResult | null>(null);
+    const [locationSent, setLocationSent] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     async function handleTrigger() {
         setTriggering(true);
         setError(null);
         try {
-            const res = await api.triggerPanic({});
+            const location = await getLocation();
+            setLocationSent(location !== undefined);
+            const res = await api.triggerPanic({ location });
             setResult(res);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Could not send SOS. Try again.");
@@ -36,9 +65,16 @@ export function PanicScreen({ navigation }: Props) {
                 <View style={styles.center}>
                     <AlertTriangle size={48} color={colors.green} />
                     <Text style={styles.confirmTitle}>SOS Sent</Text>
+                    <Text style={styles.confirmText}>Your alert has been logged and sent to law enforcement.</Text>
                     <Text style={styles.confirmText}>
-                        {result.emergency_contact_notified ? "Your emergency contact has been notified." : "Your alert has been logged."}
+                        {locationSent ? "Your location was included." : "Your location could not be shared."}
                     </Text>
+                    {result.emergency_contact_on_file && !result.emergency_contact_notified && (
+                        <Text style={styles.confirmText}>
+                            Your emergency contact is on file. Call them directly — we cannot contact them for you.
+                        </Text>
+                    )}
+                    {result.emergency_contact_notified && <Text style={styles.confirmText}>Your emergency contact has been notified.</Text>}
                     {result.fraud_report_generated && <Text style={styles.confirmText}>A fraud report has been generated.</Text>}
                 </View>
             ) : (
