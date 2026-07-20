@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { AlertTriangle, MessageCircle, PhoneCall, QrCode, ScanLine } from "lucide-react-native";
+import { AlertTriangle, MessageCircle, PhoneCall, PhoneIncoming, QrCode, ScanLine } from "lucide-react-native";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { FeatureGrid } from "../components/FeatureGrid";
 import { colors, spacing } from "../constants/colors";
@@ -40,6 +40,12 @@ export function HomeScreen() {
                         label: "Ask AI Assistant",
                         icon: MessageCircle,
                         onPress: () => navigation.navigate("MainTabs", { screen: "Chat" }),
+                    },
+                    {
+                        key: "call-screen",
+                        label: "Call Screening",
+                        icon: PhoneIncoming,
+                        onPress: () => navigation.navigate("CallSimulator"),
                     },
                 ]}
             />

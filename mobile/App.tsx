@@ -7,8 +7,10 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "./constants/colors";
 import { api, ApiError, NoteVerifyResult, QRScanResult } from "./hooks/useApi";
+import { CallSimulatorScreen } from "./screens/CallSimulatorScreen";
 import { ChatScreen } from "./screens/ChatScreen";
 import { HomeScreen } from "./screens/HomeScreen";
+import { IncomingCallScreen } from "./screens/IncomingCallScreen";
 import { NoteScannerScreen } from "./screens/NoteScannerScreen";
 import { NumberCheckScreen } from "./screens/NumberCheckScreen";
 import { PanicScreen } from "./screens/PanicScreen";
@@ -27,6 +29,7 @@ export type ScanStackParamList = {
 export type HomeStackParamList = {
     HomeMain: undefined;
     NumberCheck: undefined;
+    CallSimulator: undefined;
 };
 export type TabParamList = {
     Home: NavigatorScreenParams<HomeStackParamList>;
@@ -37,6 +40,7 @@ export type TabParamList = {
 export type RootStackParamList = {
     MainTabs: NavigatorScreenParams<TabParamList>;
     Panic: undefined;
+    IncomingCall: { phone: string };
 };
 
 declare global {
@@ -58,6 +62,7 @@ function HomeStackNavigator() {
         <HomeStack.Navigator screenOptions={stackScreenOptions}>
             <HomeStack.Screen name="HomeMain" component={HomeScreen} options={{ title: "Primer" }} />
             <HomeStack.Screen name="NumberCheck" component={NumberCheckScreen} options={{ title: "Number Check" }} />
+            <HomeStack.Screen name="CallSimulator" component={CallSimulatorScreen} options={{ title: "Call Screening" }} />
         </HomeStack.Navigator>
     );
 }
@@ -189,6 +194,8 @@ export default function App() {
             <RootStack.Navigator screenOptions={{ headerShown: false }}>
                 <RootStack.Screen name="MainTabs" component={TabNavigator} />
                 <RootStack.Screen name="Panic" component={PanicScreen} options={{ presentation: "modal" }} />
+                {/* Full-screen so it reads as a real call, not a sheet over the app. */}
+                <RootStack.Screen name="IncomingCall" component={IncomingCallScreen} options={{ presentation: "fullScreenModal" }} />
             </RootStack.Navigator>
         </NavigationContainer>
     );
