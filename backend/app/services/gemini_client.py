@@ -9,7 +9,12 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+# gemini-2.5-flash was retired for new API keys and returns 404 "no longer available
+# to new users" — which surfaced only as the generic fallback reply, never as a
+# visible error. Verified against this project's key: gemini-flash-latest and
+# gemini-3.5-flash both answer 503 "experiencing high demand", so this is the
+# fastest model that actually completes. `python -m scripts.check_gemini` re-checks.
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
 DEFAULT_TEMPERATURE = 0.3
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 1.5
