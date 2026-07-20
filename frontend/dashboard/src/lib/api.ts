@@ -81,6 +81,38 @@ class ApiClient {
     private get<T>(path: string) {
         return this.request<T>(path, { method: "GET" });
     }
+    /**
+     * Fetch a binary response. A plain <a href> can't carry the Authorization
+     * header, and the download route is auth-guarded, so binary downloads go
+     * through fetch and become an object URL at the call site.
+     */
+    private async getBlob(path: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<Blob> {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(`${API_V1}${path}`, {
+                signal: controller.signal,
+                headers: this.token ? { Authorization: `Bearer ${this.token}` } : {},
+            });
+            if (!res.ok) {
+                let detail = res.statusText;
+                try {
+                    detail = (await res.json()).detail ?? detail;
+                } catch {
+                    // non-JSON error body
+                }
+                throw new ApiError(res.status, detail);
+            }
+            return res.blob();
+        } catch (err) {
+            if (err instanceof DOMException && err.name === "AbortError") {
+                throw new ApiError(408, "Download timed out. The server may be unreachable.");
+            }
+            throw err;
+        } finally {
+            clearTimeout(timer);
+        }
+    }
     private post<T>(path: string, body?: unknown, timeoutMs?: number) {
         return this.request<T>(path, {
             method: "POST",
@@ -128,7 +160,10 @@ class ApiClient {
     getCluster = (id: string) => this.get(`/graph/cluster/${id}`);
     getMoneyFlow = (entityId: string) => this.get<MoneyFlowEdge[]>(`/graph/money-flow/${entityId}`);
     searchGraph = (query: string, limit = 20) => this.post<GraphSearchResult[]>(`/graph/search`, { query, limit });
-    generateDossier = (clusterId: string) => this.post<{ pdf_path: string }>(`/graph/dossier/${clusterId}`);
+    // Rendering HTML to PDF via WeasyPrint is slow enough to outrun the default deadline.
+    generateDossier = (clusterId: string) =>
+        this.post<{ cluster_id: string; pdf_path: string }>(`/graph/dossier/${clusterId}`, undefined, AI_TIMEOUT_MS);
+    downloadDossier = (clusterId: string) => this.getBlob(`/graph/dossier/${clusterId}/download`);
     detectCommunities = (minClusterSize = 3) =>
         this.post(`/graph/communities/detect${qs({ min_cluster_size: minClusterSize })}`);
 

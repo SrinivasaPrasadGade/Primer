@@ -112,8 +112,12 @@
     font-size: 13px;
     cursor: pointer;
 }
-.panelButton:hover {
+.panelButton:hover:not(:disabled) {
     background: var(--color-layer-3);
+}
+.panelButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .flowPanel {

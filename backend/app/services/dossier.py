@@ -106,6 +106,44 @@ async def get_cluster_timeline(db: AsyncSession, cluster_id: UUID) -> list[dict]
     return sorted(events, key=lambda e: e["date"] or "")
 
 
+async def get_latest_dossier(db: AsyncSession, cluster_id: UUID) -> dict | None:
+    """Most recently generated dossier record for a cluster, if any."""
+    row = (
+        await db.execute(
+            text(
+                """
+                SELECT id, cluster_id, title, pdf_path, generated_by, created_at
+                FROM fraud_graph.dossiers
+                WHERE cluster_id = :cluster_id
+                ORDER BY created_at DESC
+                LIMIT 1
+                """
+            ),
+            {"cluster_id": cluster_id},
+        )
+    ).mappings().first()
+    return _to_jsonable(dict(row)) if row else None
+
+
+def resolve_dossier_path(pdf_path: str | None) -> Path | None:
+    """Resolve a stored dossier path, refusing anything outside DOSSIERS_DIR.
+
+    pdf_path comes from our own INSERT rather than from the client, but this is the
+    function that turns a database string into a file the API hands out — so it
+    containment-checks rather than trusting the column.
+    """
+    if not pdf_path:
+        return None
+
+    candidate = Path(pdf_path).resolve()
+    root = DOSSIERS_DIR.resolve()
+    if root != candidate.parent and root not in candidate.parents:
+        return None
+    if not candidate.is_file():
+        return None
+    return candidate
+
+
 async def generate_dossier(db: AsyncSession, cluster_id: UUID, officer_id: UUID) -> str:
     """Generate a PDF evidence dossier for a fraud cluster and persist a record of it."""
     cluster = await get_cluster_data(db, cluster_id)

@@ -8,6 +8,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -79,6 +80,29 @@ async def generate_dossier(
     except ValueError as exc:
         raise HTTPException(404, str(exc)) from exc
     return {"cluster_id": str(cluster_id), "pdf_path": pdf_path}
+
+
+@router.get("/dossier/{cluster_id}/download")
+async def download_dossier(
+    cluster_id: UUID,
+    user: dict = Depends(require_role("lea_officer", "bank_manager")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Serve the latest generated dossier PDF for a cluster.
+
+    The app mounts no StaticFiles, so the `pdf_path` returned by the generate
+    endpoint was previously unreachable over HTTP. Serving it through a route
+    keeps the auth check on the download too.
+    """
+    record = await dossier_service.get_latest_dossier(db, cluster_id)
+    if not record:
+        raise HTTPException(404, "No dossier has been generated for this cluster yet")
+
+    path = dossier_service.resolve_dossier_path(record["pdf_path"])
+    if not path:
+        raise HTTPException(404, "Dossier file is no longer available on disk")
+
+    return FileResponse(path, media_type="application/pdf", filename=path.name)
 
 
 @router.post("/communities/detect")

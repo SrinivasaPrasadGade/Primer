@@ -102,3 +102,55 @@ async def test_generate_dossier_happy_path(monkeypatch, tmp_path):
     assert output_path.endswith(".pdf")
     db.commit.assert_awaited_once()
     db.execute.assert_awaited_once()
+
+
+# ---------------------------------------------------------------------------
+# Download support: latest-dossier lookup + path containment
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_latest_dossier_found():
+    dossier_id, cluster_id = uuid4(), uuid4()
+    db = AsyncMock()
+    db.execute.return_value = FakeResult(
+        row={"id": dossier_id, "cluster_id": cluster_id, "title": "Dossier - X",
+             "pdf_path": "uploads/dossiers/d.pdf", "generated_by": uuid4(), "created_at": None}
+    )
+    result = await svc.get_latest_dossier(db, cluster_id)
+    assert result["id"] == str(dossier_id)
+    assert result["pdf_path"] == "uploads/dossiers/d.pdf"
+
+
+@pytest.mark.asyncio
+async def test_get_latest_dossier_missing():
+    db = AsyncMock()
+    db.execute.return_value = FakeResult(row=None)
+    assert await svc.get_latest_dossier(db, uuid4()) is None
+
+
+def test_resolve_dossier_path_accepts_file_in_dossiers_dir(monkeypatch, tmp_path):
+    monkeypatch.setattr(svc, "DOSSIERS_DIR", tmp_path)
+    pdf = tmp_path / "dossier_ok.pdf"
+    pdf.write_bytes(b"%PDF-1.4")
+    assert svc.resolve_dossier_path(str(pdf)) == pdf.resolve()
+
+
+def test_resolve_dossier_path_rejects_missing_and_empty(monkeypatch, tmp_path):
+    monkeypatch.setattr(svc, "DOSSIERS_DIR", tmp_path)
+    assert svc.resolve_dossier_path(str(tmp_path / "absent.pdf")) is None
+    assert svc.resolve_dossier_path("") is None
+    assert svc.resolve_dossier_path(None) is None
+
+
+def test_resolve_dossier_path_rejects_escape(monkeypatch, tmp_path):
+    """A stored path pointing outside DOSSIERS_DIR must never be served."""
+    dossiers = tmp_path / "dossiers"
+    dossiers.mkdir()
+    monkeypatch.setattr(svc, "DOSSIERS_DIR", dossiers)
+
+    outside = tmp_path / "secret.pdf"
+    outside.write_bytes(b"%PDF-1.4")
+
+    assert svc.resolve_dossier_path(str(outside)) is None
+    assert svc.resolve_dossier_path(str(dossiers / ".." / "secret.pdf")) is None

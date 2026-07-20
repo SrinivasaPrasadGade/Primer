@@ -107,7 +107,7 @@ export default function FraudGraphExplorer() {
                 </div>
 
                 <div>
-                    <EntityPanel node={selectedNode} onViewMoneyFlow={handleViewMoneyFlow} />
+                    <EntityPanel node={selectedNode} clusterId={selected?.cluster_id ?? null} onViewMoneyFlow={handleViewMoneyFlow} />
                     {moneyFlow && <MoneyFlowPanel edges={moneyFlow.edges} nodeId={moneyFlow.nodeId} />}
                 </div>
             </div>
