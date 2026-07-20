@@ -89,11 +89,22 @@ async def test_generate_dossier_happy_path(monkeypatch, tmp_path):
     async def fake_timeline(db, cid):
         return [{"date": "2026-01-01", "event": "First observed"}]
 
+    # Stub the renderer so the test doesn't need WeasyPrint's GTK libraries, which
+    # pip can't install on Windows. What's under test here is the query/render/persist
+    # sequence, not PDF layout.
+    class FakeHTML:
+        def __init__(self, string=None):
+            self.string = string
+
+        def write_pdf(self, path):
+            open(path, "wb").write(b"%PDF-1.4 stub")
+
     monkeypatch.setattr(svc, "get_cluster_data", fake_get_cluster_data)
     monkeypatch.setattr(svc, "get_cluster_entities", fake_entities)
     monkeypatch.setattr(svc, "get_cluster_edges", fake_edges)
     monkeypatch.setattr(svc, "get_cluster_timeline", fake_timeline)
     monkeypatch.setattr(svc, "DOSSIERS_DIR", tmp_path)
+    monkeypatch.setattr(svc, "_load_html_renderer", lambda: FakeHTML)
 
     db = AsyncMock()
     output_path = await svc.generate_dossier(db, cluster_id, officer_id)

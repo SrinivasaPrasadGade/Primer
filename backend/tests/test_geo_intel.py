@@ -108,8 +108,10 @@ async def test_generate_hotspot_predictions_filters_below_threshold(monkeypatch)
 
     monkeypatch.setattr(svc, "_load_hotspot_model", lambda: FakeModel())
     monkeypatch.setattr(
-        svc, "_crime_counts_near",
-        AsyncMock(return_value={"crime_count_7d": 5, "crime_count_30d": 20, "avg_loss_amount_area": 30000.0}),
+        svc, "_crime_counts_for_points",
+        AsyncMock(side_effect=lambda db, points, radius_km: [
+            {"crime_count_7d": 5, "crime_count_30d": 20, "avg_loss_amount_area": 30000.0} for _ in points
+        ]),
     )
 
     db = AsyncMock()
@@ -138,8 +140,10 @@ async def test_generate_hotspot_predictions_none_above_threshold(monkeypatch):
 
     monkeypatch.setattr(svc, "_load_hotspot_model", lambda: FakeModel())
     monkeypatch.setattr(
-        svc, "_crime_counts_near",
-        AsyncMock(return_value={"crime_count_7d": 0, "crime_count_30d": 0, "avg_loss_amount_area": 0}),
+        svc, "_crime_counts_for_points",
+        AsyncMock(side_effect=lambda db, points, radius_km: [
+            {"crime_count_7d": 0, "crime_count_30d": 0, "avg_loss_amount_area": 0} for _ in points
+        ]),
     )
 
     db = AsyncMock()
@@ -147,7 +151,7 @@ async def test_generate_hotspot_predictions_none_above_threshold(monkeypatch):
 
     assert result == []
 
-    # _crime_counts_near is mocked out, so the only statements reaching the DB
+    # _crime_counts_for_points is mocked out, so the only statements reaching the DB
     # here are the clear-then-insert pair. Nothing cleared the threshold, so the
     # DELETE runs and no INSERT follows it.
     assert db.execute.await_count == 1
@@ -175,3 +179,54 @@ async def test_get_stored_predictions():
 
     assert len(result) == 1
     assert result[0]["risk_score"] == 70
+
+
+# ---------------------------------------------------------------------------
+# _crime_counts_for_points — batched grid lookup
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_crime_counts_for_points_is_one_query_and_keeps_order():
+    points = [(19.0, 72.8), (19.1, 72.9), (19.2, 73.0)]
+    db = AsyncMock()
+    db.execute.return_value = FakeResult(rows=[
+        {"idx": 1, "crime_count_7d": 5, "crime_count_30d": 9, "avg_loss_amount_area": 100},
+        {"idx": 2, "crime_count_7d": 0, "crime_count_30d": 1, "avg_loss_amount_area": 0},
+        {"idx": 3, "crime_count_7d": 7, "crime_count_30d": 8, "avg_loss_amount_area": 250},
+    ])
+
+    result = await svc._crime_counts_for_points(db, points, radius_km=2.0)
+
+    # One statement for the whole grid, not one per point.
+    assert db.execute.await_count == 1
+    assert [r["crime_count_7d"] for r in result] == [5, 0, 7]
+
+    params = db.execute.await_args.args[1]
+    assert params["lats"] == [19.0, 19.1, 19.2]
+    assert params["lngs"] == [72.8, 72.9, 73.0]
+    assert params["radius_m"] == 2000.0
+
+
+@pytest.mark.asyncio
+async def test_crime_counts_for_points_fills_gaps_without_shifting():
+    """A point the query returns no row for must yield zeros in its own slot."""
+    points = [(19.0, 72.8), (19.1, 72.9), (19.2, 73.0)]
+    db = AsyncMock()
+    # Middle point absent from the result set.
+    db.execute.return_value = FakeResult(rows=[
+        {"idx": 1, "crime_count_7d": 5, "crime_count_30d": 9, "avg_loss_amount_area": 100},
+        {"idx": 3, "crime_count_7d": 7, "crime_count_30d": 8, "avg_loss_amount_area": 250},
+    ])
+
+    result = await svc._crime_counts_for_points(db, points, radius_km=2.0)
+
+    assert len(result) == 3
+    assert [r["crime_count_7d"] for r in result] == [5, 0, 7]
+
+
+@pytest.mark.asyncio
+async def test_crime_counts_for_points_empty_grid_skips_the_query():
+    db = AsyncMock()
+    assert await svc._crime_counts_for_points(db, [], radius_km=2.0) == []
+    db.execute.assert_not_awaited()

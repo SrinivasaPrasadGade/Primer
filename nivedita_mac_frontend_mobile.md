@@ -578,36 +578,36 @@ export const api = new ApiClient();
 ## 8. Task Checklist (Phase 4: Nivedita)
 
 ### 1. Web Dashboard Shell & Core UI
-- [ ] Next.js project setup (App Router, CSS Modules)
-- [ ] `globals.css` with all design tokens
-- [ ] Login page (email + password → JWT)
-- [ ] Root layout: Navbar (glassmorphism) + Sidebar + main area
-- [ ] Home Dashboard: stat cards, threat level, mini map, live alert feed
-- [ ] Scam Sentinel: Live Monitor (session cards with RED/AMBER/YELLOW)
-- [ ] Scam Sentinel: Session Detail with Explainable AI signal bars
-- [ ] RED card pulse animation
-- [ ] Fraud Graph Explorer (Sigma.js canvas + entity detail panel)
-- [ ] Geo Intel: Mapbox crime map with heatmap + Prediction zone overlay
-- [ ] AI Copilot chat bar in graph view + full chat interface page
-- [ ] Case Summarizer: upload → result display
-- [ ] Note Verify: bank manager dashboard view
-- [ ] Notification dropdown
+- [x] Next.js project setup (App Router, CSS Modules)
+- [x] `globals.css` with all design tokens
+- [x] Login page (email + password → JWT)
+- [x] Root layout: Navbar (glassmorphism) + Sidebar + main area
+- [x] Home Dashboard: stat cards, threat level, mini map, live alert feed
+- [x] Scam Sentinel: Live Monitor (session cards with RED/AMBER/YELLOW)
+- [x] Scam Sentinel: Session Detail with Explainable AI signal bars
+- [x] RED card pulse animation
+- [x] Fraud Graph Explorer (Sigma.js canvas + entity detail panel)
+- [x] Geo Intel: Mapbox crime map with heatmap + Prediction zone overlay
+- [x] AI Copilot chat bar in graph view + full chat interface page
+- [x] Case Summarizer: upload → result display
+- [x] Note Verify: bank manager dashboard view
+- [x] Notification dropdown
 
 ### 2. Mobile App Setup
-- [ ] Expo project setup
-- [ ] Mobile Home screen with feature grid
-- [ ] Mobile Note Scanner (camera integration)
-- [ ] Mobile QR Scanner screen (camera → decode → result)
-- [ ] Mobile Call Screening overlay (simulated incoming call)
-- [ ] Mobile Panic Button screen
-- [ ] Mobile AI Chat screen
-- [ ] Number Check screen
+- [x] Expo project setup
+- [x] Mobile Home screen with feature grid
+- [x] Mobile Note Scanner (camera integration)
+- [x] Mobile QR Scanner screen (camera → decode → result)
+- [x] Mobile Call Screening overlay (simulated incoming call)
+- [x] Mobile Panic Button screen
+- [x] Mobile AI Chat screen
+- [x] Number Check screen
 
 ### 3. Integration & Demo Polish
-- [ ] All screens connected to live APIs
-- [ ] Loading skeletons everywhere
-- [ ] Error states (empty, offline, 404)
-- [ ] Animations smooth at 60fps
+- [x] All screens connected to live APIs
+- [x] Loading skeletons everywhere
+- [x] Error states (empty, offline, 404)
+- [x] Animations smooth at 60fps
 - [ ] Mobile tested on physical device
 - [ ] Dashboard tested on external display / projector
 - [ ] Demo rehearsal run-through

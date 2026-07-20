@@ -132,22 +132,56 @@ def _grid_points(bounds: dict, cell_km: float) -> list[tuple[float, float]]:
     return points
 
 
-async def _crime_counts_near(db: AsyncSession, lat: float, lng: float, radius_km: float) -> dict:
-    """Count incidents within radius_km of (lat, lng) over the last 7/30 days, plus avg loss."""
-    query = text(
-        """
-        SELECT
-            COUNT(*) FILTER (WHERE reported_at >= NOW() - INTERVAL '7 days') AS crime_count_7d,
-            COUNT(*) FILTER (WHERE reported_at >= NOW() - INTERVAL '30 days') AS crime_count_30d,
-            COALESCE(AVG(estimated_loss), 0) AS avg_loss_amount_area
-        FROM geo_intel.incidents
-        WHERE ST_DWithin(location::geography, ST_MakePoint(:lng, :lat)::geography, :radius_m)
-        """
-    )
-    row = (
-        await db.execute(query, {"lat": lat, "lng": lng, "radius_m": radius_km * 1000})
-    ).mappings().first()
-    return dict(row) if row else {"crime_count_7d": 0, "crime_count_30d": 0, "avg_loss_amount_area": 0}
+_EMPTY_COUNTS = {"crime_count_7d": 0, "crime_count_30d": 0, "avg_loss_amount_area": 0}
+
+
+async def _crime_counts_for_points(
+    db: AsyncSession, points: list[tuple[float, float]], radius_km: float
+) -> list[dict]:
+    """Counts within radius_km of every grid point, in one round trip.
+
+    Scoring used to issue one query per point, which is fine for a city box at a
+    2km grid but grows linearly with area: halving grid_km quadruples the queries,
+    and each is a sequential await on a single connection. Unnesting the grid and
+    joining once keeps a wider bounding box to a single statement.
+
+    Returns one dict per input point, in the same order.
+    """
+    if not points:
+        return []
+
+    lats = [lat for lat, _ in points]
+    lngs = [lng for _, lng in points]
+
+    rows = (
+        await db.execute(
+            text(
+                """
+                SELECT
+                    p.idx,
+                    COUNT(i.id) FILTER (WHERE i.reported_at >= NOW() - INTERVAL '7 days') AS crime_count_7d,
+                    COUNT(i.id) FILTER (WHERE i.reported_at >= NOW() - INTERVAL '30 days') AS crime_count_30d,
+                    COALESCE(AVG(i.estimated_loss), 0) AS avg_loss_amount_area
+                FROM unnest(CAST(:lats AS float8[]), CAST(:lngs AS float8[]))
+                     WITH ORDINALITY AS p(lat, lng, idx)
+                -- LEFT JOIN so a grid point with no incidents nearby still yields a
+                -- zero row rather than dropping out and shifting every later index.
+                LEFT JOIN geo_intel.incidents i
+                    ON ST_DWithin(
+                        i.location::geography,
+                        ST_MakePoint(p.lng, p.lat)::geography,
+                        :radius_m
+                    )
+                GROUP BY p.idx
+                ORDER BY p.idx
+                """
+            ),
+            {"lats": lats, "lngs": lngs, "radius_m": radius_km * 1000},
+        )
+    ).mappings().all()
+
+    by_idx = {row["idx"]: dict(row) for row in rows}
+    return [by_idx.get(i, dict(_EMPTY_COUNTS)) for i in range(1, len(points) + 1)]
 
 
 async def generate_hotspot_predictions(
@@ -160,9 +194,9 @@ async def generate_hotspot_predictions(
     """Score a grid of candidate points across bounds with the trained hotspot model,
     persist predictions scoring at/above risk_threshold, and return them.
 
-    Per-point crime-count queries run sequentially — a single AsyncSession/connection
-    isn't safe to fan out concurrently, and at demo scale (a city bounding box, 1-2km
-    grid) this is a few dozen round trips, not thousands.
+    Crime counts for the whole grid come back in a single query, so widening the
+    bounding box or tightening grid_km costs a bigger scan rather than proportionally
+    more round trips.
     """
     model = _load_hotspot_model()
     today = date.today()
@@ -186,9 +220,10 @@ async def generate_hotspot_predictions(
         {"pdate": today, "crime_type": crime_type, **bounds},
     )
 
+    all_counts = await _crime_counts_for_points(db, points, radius_km=grid_km)
+
     features = []
-    for lat, lng in points:
-        counts = await _crime_counts_near(db, lat, lng, radius_km=grid_km)
+    for (lat, lng), counts in zip(points, all_counts):
         features.append(
             [
                 lat, lng,

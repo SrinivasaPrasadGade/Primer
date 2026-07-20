@@ -14,12 +14,33 @@ from uuid import UUID
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from weasyprint import HTML
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 DOSSIERS_DIR = Path("uploads/dossiers")
 
 _env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
+
+
+def _load_html_renderer():
+    """Import WeasyPrint at call time, not import time.
+
+    The wheel installs cleanly everywhere, but importing it dlopen's GTK
+    (libgobject-2.0-0), which pip cannot provide on Windows. At module scope that
+    turned one optional PDF feature into a hard failure for anything that transitively
+    imports this module — which is app.main via the fraud_graph router, and therefore
+    the entire API and the whole test suite. Deferring it means only dossier
+    generation needs GTK.
+    """
+    try:
+        from weasyprint import HTML
+    except OSError as exc:  # missing native libs, not a missing package
+        raise RuntimeError(
+            "Dossier PDF generation needs WeasyPrint's GTK libraries, which are not "
+            "installed. On Windows install the GTK3 runtime; on Debian/Ubuntu "
+            "`apt-get install libpango-1.0-0 libpangoft2-1.0-0`. Everything else in "
+            "the API works without it."
+        ) from exc
+    return HTML
 
 
 def _to_jsonable(value):
@@ -164,10 +185,12 @@ async def generate_dossier(db: AsyncSession, cluster_id: UUID, officer_id: UUID)
         generated_by=str(officer_id),
     )
 
+    html_renderer = _load_html_renderer()
+
     DOSSIERS_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     output_path = DOSSIERS_DIR / f"dossier_{cluster_id}_{timestamp}.pdf"
-    HTML(string=html_content).write_pdf(str(output_path))
+    html_renderer(string=html_content).write_pdf(str(output_path))
 
     await db.execute(
         text(

@@ -587,29 +587,29 @@ async def generate_dossier(db, cluster_id: str, officer_id: str) -> str:
 ## 9. Task Checklist (Phase 2: Yashi)
 
 ### 1. Scam Sentinel & Graph Logic
-- [ ] Scam Sentinel: signal scoring (all 5 signals)
-- [ ] Scam Sentinel: urgency phrase detection (Hindi + English)
-- [ ] Scam Sentinel: script similarity (sentence-transformers + FAISS)
-- [ ] Scam Sentinel: alert level classification
-- [ ] Number reputation scoring algorithm
-- [ ] Fraud Graph: entity neighbourhood query (recursive CTE)
-- [ ] Fraud Graph: community detection (union-find)
-- [ ] Fraud Graph: money flow tracing
+- [x] Scam Sentinel: signal scoring (all 5 signals)
+- [x] Scam Sentinel: urgency phrase detection (Hindi + English)
+- [x] Scam Sentinel: script similarity (sentence-transformers + FAISS)
+- [x] Scam Sentinel: alert level classification
+- [x] Number reputation scoring algorithm
+- [x] Fraud Graph: entity neighbourhood query (recursive CTE)
+- [x] Fraud Graph: community detection (union-find)
+- [x] Fraud Graph: money flow tracing
 
 ### 2. Geo Intel & Citizen Shield Logic
-- [ ] Geo Intel: PostGIS heatmap aggregation
-- [ ] Geo Intel: incident pins query
-- [ ] Geo Intel: hotspot prediction integration
-- [ ] Citizen Shield: Gemini prompt templates (fraud advisor)
-- [ ] Citizen Shield: language detection (langdetect)
-- [ ] Knowledge Base: similarity search + pattern labeling
+- [x] Geo Intel: PostGIS heatmap aggregation
+- [x] Geo Intel: incident pins query
+- [x] Geo Intel: hotspot prediction integration
+- [x] Citizen Shield: Gemini prompt templates (fraud advisor)
+- [x] Citizen Shield: language detection (langdetect)
+- [x] Knowledge Base: similarity search + pattern labeling
 
 ### 3. Extra Features Logic
-- [ ] AI Copilot: query parsing + DB query generation
-- [ ] QR Scanner: UPI parsing + risk assessment
-- [ ] QR Scanner: URL domain reputation check
-- [ ] Case Summarizer: evidence extraction + Gemini prompts
-- [ ] Dossier: PDF template + generation logic
-- [ ] Deepfake voice: inference wrapper for model output
-- [ ] Integration testing: all services work with Srinivas's routers
+- [x] AI Copilot: query parsing + DB query generation
+- [x] QR Scanner: UPI parsing + risk assessment
+- [x] QR Scanner: URL domain reputation check
+- [x] Case Summarizer: evidence extraction + Gemini prompts
+- [x] Dossier: PDF template + generation logic
+- [x] Deepfake voice: inference wrapper for model output
+- [x] Integration testing: all services work with Srinivas's routers
 - [ ] Performance: ensure graph queries < 2s for 100 nodes

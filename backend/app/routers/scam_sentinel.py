@@ -5,6 +5,7 @@ response formatting; they never compute signal scores themselves.
 
 from __future__ import annotations
 
+import asyncio
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
@@ -15,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_user, require_role
 from app.auth.security import JWTError, decode_token
 from app.database import get_db
+from app.services import live_feed
 from app.services import scam_sentinel as scam_service
 
 router = APIRouter()
@@ -43,7 +45,8 @@ class FlagNumberRequest(BaseModel):
 _connected_clients: list[WebSocket] = []
 
 
-async def broadcast_new_session(session_data: dict) -> None:
+async def deliver_to_local_clients(session_data: dict) -> None:
+    """Fan out to the sockets held by *this* process."""
     for client in list(_connected_clients):
         try:
             await client.send_json(session_data)
@@ -53,6 +56,23 @@ async def broadcast_new_session(session_data: dict) -> None:
             # classify request that triggered it, so only remove if still present.
             if client in _connected_clients:
                 _connected_clients.remove(client)
+
+
+async def broadcast_new_session(session_data: dict) -> None:
+    """Publish an event to every worker's live-feed clients.
+
+    On the Redis path this process receives its own message back through the
+    subscription, so it must NOT also deliver locally here — that would send every
+    event twice to sockets on the publishing worker.
+    """
+    if await live_feed.publish(session_data):
+        return
+    await deliver_to_local_clients(session_data)
+
+
+async def start_live_feed_subscriber() -> asyncio.Task:
+    """Begin delivering Redis-published events to this process's sockets."""
+    return asyncio.create_task(live_feed.run_subscriber(deliver_to_local_clients))
 
 
 _WS_ALLOWED_ROLES = ("lea_officer", "bank_manager")
