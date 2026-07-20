@@ -29,6 +29,20 @@ uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
 > is not fatal: the Geo Intel map just shows 0 predicted hotspots until an LEA officer
 > clicks "Run forecast for this view".
 
+### Driving the live feed during a demo
+
+Nothing creates scam sessions on its own, so **Scam Sentinel → Live Monitor** never
+moves on its own either. Run this in a second terminal, with the API already up, to
+insert and classify a session on a timer:
+
+```bash
+python -m scripts.simulate_live_feed --interval 3   # a new alert every 3s
+```
+
+> It classifies over HTTP on purpose. The live-feed socket broadcasts from a client
+> list held in the API process, so a script that called `process_scam_session`
+> directly would score sessions silently and the dashboard would never react.
+
 - **Base URL:** `http://localhost:8000`
 - **All endpoints below are under `/api/v1`** (matches your `lib/api.ts` `API_BASE + "/api/v1"`).
 - **CORS** is already open for `http://localhost:3000` (Next.js) and `http://localhost:19006` (Expo). If you run the dashboard on a different port, tell me and I'll add it.
