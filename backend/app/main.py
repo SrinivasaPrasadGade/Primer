@@ -13,6 +13,7 @@ from app.routers.copilot import router as copilot_router
 from app.routers.correlation import router as correlation_router
 from app.routers.fraud_graph import router as fraud_graph_router
 from app.routers.geo_intel import router as geo_intel_router
+from app.routers.knowledge_base import router as knowledge_base_router
 from app.routers.note_verify import router as note_verify_router
 from app.routers.panic import router as panic_router
 from app.routers.qr_scanner import router as qr_scanner_router
@@ -44,6 +45,7 @@ app.include_router(case_summary_router, prefix="/api/v1/case", tags=["Case Summa
 app.include_router(panic_router, prefix="/api/v1/panic", tags=["Panic Button"])
 app.include_router(call_screen_router, prefix="/api/v1/screen", tags=["Call Screening"])
 app.include_router(correlation_router, prefix="/api/v1/correlation", tags=["Cross-Module Correlation"])
+app.include_router(knowledge_base_router, prefix="/api/v1/kb", tags=["Adaptive Fraud KB"])
 
 logger = logging.getLogger("primer")
 

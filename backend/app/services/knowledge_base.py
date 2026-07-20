@@ -72,6 +72,95 @@ async def find_similar_patterns(db: AsyncSession, description: str, top_k: int =
     return _to_jsonable([dict(row) for row in rows])
 
 
+# Cosine similarity below this is treated as "no match" rather than a weak one.
+# Recording weak matches would inflate times_matched into noise, which defeats the
+# point of tracking which patterns are actually live.
+MATCH_THRESHOLD = 0.45
+
+
+async def match_and_record_pattern(
+    db: AsyncSession, description: str, top_k: int = 5, threshold: float = MATCH_THRESHOLD
+) -> dict:
+    """Match text against known patterns and bump `times_matched` on the best hit.
+
+    This is the "adaptive" half of the Adaptive Fraud KB: every real match makes the
+    pattern's frequency count reflect what's actually circulating, rather than the
+    static seed value it was created with.
+    """
+    matches = await find_similar_patterns(db, description, top_k=top_k)
+
+    top = matches[0] if matches else None
+    if not top or top["similarity"] < threshold:
+        return {"matches": matches, "recorded_match": None}
+
+    # find_similar_patterns has already round-tripped the UUID to a str; asyncpg
+    # won't coerce that back to a uuid column, so cast explicitly.
+    await db.execute(
+        text(
+            """
+            UPDATE knowledge_base.patterns
+            SET times_matched = times_matched + 1, updated_at = NOW()
+            WHERE id = (:pattern_id)::uuid
+            """
+        ),
+        {"pattern_id": top["id"]},
+    )
+    await db.commit()
+    return {"matches": matches, "recorded_match": top}
+
+
+async def list_patterns(db: AsyncSession, scam_type: str | None = None, limit: int = 50) -> list[dict]:
+    """Browse the pattern library, most-matched first."""
+    rows = (
+        await db.execute(
+            text(
+                """
+                SELECT id, title, description, scam_type, language, key_indicators,
+                       times_matched, verified, created_at, updated_at
+                FROM knowledge_base.patterns
+                WHERE ((:scam_type)::varchar IS NULL OR scam_type = :scam_type)
+                ORDER BY times_matched DESC, created_at DESC
+                LIMIT :limit
+                """
+            ),
+            {"scam_type": scam_type, "limit": limit},
+        )
+    ).mappings().all()
+    return _to_jsonable([dict(row) for row in rows])
+
+
+async def backfill_embeddings(db: AsyncSession, limit: int = 200) -> int:
+    """Embed patterns that have none, and return how many were updated.
+
+    The seeded patterns are inserted without an `embedding`, and
+    find_similar_patterns filters on `embedding IS NOT NULL` — so without this the
+    library is invisible to similarity search no matter how many patterns exist.
+    """
+    rows = (
+        await db.execute(
+            text(
+                """
+                SELECT id, description FROM knowledge_base.patterns
+                WHERE embedding IS NULL
+                LIMIT :limit
+                """
+            ),
+            {"limit": limit},
+        )
+    ).mappings().all()
+
+    for row in rows:
+        embedding = await _embed(row["description"])
+        await db.execute(
+            text("UPDATE knowledge_base.patterns SET embedding = (:embedding)::vector WHERE id = :pattern_id"),
+            {"embedding": embedding, "pattern_id": row["id"]},
+        )
+
+    if rows:
+        await db.commit()
+    return len(rows)
+
+
 async def add_pattern(
     db: AsyncSession,
     title: str,

@@ -62,6 +62,71 @@ async def test_find_similar_patterns_empty():
 
 
 @pytest.mark.asyncio
+async def test_match_and_record_pattern_records_top_hit():
+    pattern_id = uuid4()
+    db = AsyncMock()
+    db.execute.return_value = FakeResult(
+        rows=[
+            {"id": pattern_id, "title": "Digital Arrest", "description": "d",
+             "scam_type": "digital_arrest", "key_indicators": [], "similarity": 0.88},
+            {"id": uuid4(), "title": "Other", "description": "d",
+             "scam_type": "phishing", "key_indicators": [], "similarity": 0.50},
+        ]
+    )
+
+    result = await svc.match_and_record_pattern(db, "you are under digital arrest")
+
+    assert result["recorded_match"]["id"] == str(pattern_id)
+    # Only the top hit is counted, not every result above the threshold.
+    update_params = db.execute.call_args[0][1]
+    assert update_params["pattern_id"] == str(pattern_id)
+    db.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_match_and_record_pattern_ignores_weak_match():
+    db = AsyncMock()
+    db.execute.return_value = FakeResult(
+        rows=[{"id": uuid4(), "title": "t", "description": "d", "scam_type": "phishing",
+               "key_indicators": [], "similarity": 0.10}]
+    )
+
+    result = await svc.match_and_record_pattern(db, "unrelated text")
+
+    assert result["recorded_match"] is None
+    assert len(result["matches"]) == 1
+    # A weak match must not inflate times_matched.
+    db.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_match_and_record_pattern_no_matches():
+    db = AsyncMock()
+    db.execute.return_value = FakeResult(rows=[])
+    result = await svc.match_and_record_pattern(db, "anything")
+    assert result == {"matches": [], "recorded_match": None}
+    db.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_backfill_embeddings_updates_missing():
+    db = AsyncMock()
+    db.execute.return_value = FakeResult(rows=[{"id": uuid4(), "description": "a"},
+                                               {"id": uuid4(), "description": "b"}])
+    count = await svc.backfill_embeddings(db)
+    assert count == 2
+    db.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_backfill_embeddings_noop_when_all_embedded():
+    db = AsyncMock()
+    db.execute.return_value = FakeResult(rows=[])
+    assert await svc.backfill_embeddings(db) == 0
+    db.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_add_pattern():
     pattern_id = uuid4()
     labeled_by = uuid4()
