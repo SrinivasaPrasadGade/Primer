@@ -8,7 +8,7 @@ import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useApi } from "@/hooks/useApi";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { api } from "@/lib/api";
-import { WS_SCAM_LIVE } from "@/lib/constants";
+import { wsScamLiveUrl } from "@/lib/constants";
 import styles from "@/styles/scam.module.css";
 
 const FILTERS = ["ALL", "RED", "AMBER", "YELLOW"] as const;
@@ -28,7 +28,7 @@ export default function ScamLiveMonitor() {
     const { data: sessions, isLoading } = useApi(key, () =>
         api.getScamSessions(filter === "ALL" ? { limit: 50 } : { alert_level: filter, limit: 50 })
     );
-    const { messages, isConnected } = useWebSocket<LiveEvent>(WS_SCAM_LIVE);
+    const { messages, isConnected } = useWebSocket<LiveEvent>(wsScamLiveUrl(api.getToken()));
 
     useEffect(() => {
         if (messages.length > 0) mutate(key);

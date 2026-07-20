@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 // is corrected: the doc's snippet reopens the socket without re-attaching the
 // onopen/onmessage/onclose handlers, so a reconnected socket would go silent.
 // Here connect() re-binds every handler, and teardown cancels a pending retry.
-export function useWebSocket<T>(url: string) {
+export function useWebSocket<T>(url: string | null) {
     const [messages, setMessages] = useState<T[]>([]);
     const [isConnected, setIsConnected] = useState(false);
     const ws = useRef<WebSocket | null>(null);
@@ -13,10 +13,15 @@ export function useWebSocket<T>(url: string) {
     const closedByClient = useRef(false);
 
     useEffect(() => {
+        // null means "not ready to connect yet" (e.g. no auth token), so don't
+        // open a socket that the server would immediately reject.
+        if (!url) return;
+        const socketUrl = url;
+
         closedByClient.current = false;
 
         function connect() {
-            const socket = new WebSocket(url);
+            const socket = new WebSocket(socketUrl);
             ws.current = socket;
 
             socket.onopen = () => setIsConnected(true);

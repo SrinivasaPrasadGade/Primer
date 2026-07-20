@@ -129,7 +129,10 @@ async def _insert_session(db, caller_numbers: list[str]) -> tuple[str, str]:
             "call_end": datetime.now(timezone.utc),
             "duration": duration,
             "spoofing": random.random() < 0.35,
-            "voice_prob": round(random.uniform(0, 95), 2),
+            # 0-1, matching the seed data and what generate_voice_explanation expects.
+            # Writing 0-100 here makes the voice signal dwarf the other four (all 0-1),
+            # so compute_overall_confidence saturates and every call comes out RED/100.
+            "voice_prob": round(random.uniform(0, 0.95), 2),
         },
     )
     await db.commit()

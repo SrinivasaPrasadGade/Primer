@@ -7,12 +7,13 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user, require_role
+from app.auth.security import JWTError, decode_token
 from app.database import get_db
 from app.services import scam_sentinel as scam_service
 
@@ -47,17 +48,68 @@ async def broadcast_new_session(session_data: dict) -> None:
         try:
             await client.send_json(session_data)
         except Exception:
-            _connected_clients.remove(client)
+            # Two concurrent broadcasts can both fail on the same dead client. The
+            # second .remove() would raise ValueError out of broadcast and fail the
+            # classify request that triggered it, so only remove if still present.
+            if client in _connected_clients:
+                _connected_clients.remove(client)
+
+
+_WS_ALLOWED_ROLES = ("lea_officer", "bank_manager")
+
+
+async def _authenticate_socket(token: str | None, db: AsyncSession) -> dict | None:
+    """Resolve a live-feed token to an authorised user, or None.
+
+    Browsers can't set an Authorization header on a WebSocket handshake, so the
+    token arrives as a query parameter instead. The checks otherwise mirror
+    get_current_user + require_role on the REST routes.
+    """
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+    except JWTError:
+        return None
+
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+
+    row = (
+        await db.execute(
+            text("SELECT id, email, role, is_active FROM core.users WHERE id = :user_id"),
+            {"user_id": user_id},
+        )
+    ).mappings().first()
+    if row is None or not row["is_active"] or row["role"] not in _WS_ALLOWED_ROLES:
+        return None
+    return dict(row)
 
 
 @router.websocket("/ws/live")
-async def scam_live_feed(websocket: WebSocket):
+async def scam_live_feed(
+    websocket: WebSocket,
+    token: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await _authenticate_socket(token, db)
+    if user is None:
+        # Reject during the handshake. Closing before accept() means an
+        # unauthenticated client never receives a single session frame.
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await websocket.accept()
     _connected_clients.append(websocket)
     try:
         while True:
             await websocket.receive_text()  # keep-alive; client doesn't need to send anything meaningful
     except WebSocketDisconnect:
+        pass
+    finally:
+        # finally, not just the disconnect path: any error here would otherwise
+        # leave a dead socket in the broadcast list.
         if websocket in _connected_clients:
             _connected_clients.remove(websocket)
 

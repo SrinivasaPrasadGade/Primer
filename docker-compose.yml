@@ -37,6 +37,9 @@ services:
       DATABASE_URL: postgresql+asyncpg://primer:primer_dev@postgres:5432/primer
       REDIS_URL: redis://redis:6379
       GEMINI_API_KEY: ${GEMINI_API_KEY}
+      # Without this the API falls back to the placeholder in app/config.py, which is
+      # committed to a public repo — anyone could forge a valid officer token.
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?set JWT_SECRET_KEY in .env, e.g. openssl rand -hex 32}
     depends_on:
       postgres:
         condition: service_healthy

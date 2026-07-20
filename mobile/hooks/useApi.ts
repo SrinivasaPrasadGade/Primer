@@ -14,7 +14,7 @@ class ApiClient {
     private token: string | null = null;
     private loginPromise: Promise<string> | null = null;
 
-    private async request<T>(path: string, options: RequestInit = {}, requireAuth = true): Promise<T> {
+    private async request<T>(path: string, options: RequestInit = {}, requireAuth = true, isRetry = false): Promise<T> {
         if (requireAuth && !this.token) await this.ensureLoggedIn();
 
         const res = await fetch(`${API_V1}${path}`, {
@@ -25,6 +25,17 @@ class ApiClient {
                 ...options.headers,
             },
         });
+
+        // An expired token is cached in AsyncStorage and would otherwise be replayed
+        // forever, failing every request until the app's storage is wiped. Drop it,
+        // sign in again, and replay once. `isRetry` keeps that to a single attempt so
+        // a genuinely rejected login can't loop.
+        if (res.status === 401 && requireAuth && !isRetry) {
+            await this.clearToken();
+            await this.ensureLoggedIn();
+            return this.request<T>(path, options, requireAuth, true);
+        }
+
         if (!res.ok) {
             let detail = res.statusText;
             try {
@@ -37,6 +48,12 @@ class ApiClient {
         }
         if (res.status === 204) return undefined as T;
         return res.json();
+    }
+
+    /** Forget the current token, in memory and on disk, so the next call re-authenticates. */
+    private async clearToken(): Promise<void> {
+        this.token = null;
+        await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
     }
 
     async ensureLoggedIn(): Promise<string> {
