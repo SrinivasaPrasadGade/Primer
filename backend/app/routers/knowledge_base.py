@@ -50,8 +50,9 @@ async def match(
 ):
     """Match free text against the pattern library, recording the hit.
 
-    Takes the text from the caller rather than reading it off a scam session:
-    scam_sessions has no transcript column, so there is no stored text to match.
+    Takes the text from the caller so any source can use it — an analyst pasting a
+    forwarded message, or a caller passing `scam_sessions.transcript_text` (added in
+    migration 0002) for a stored session.
     """
     return await kb_service.match_and_record_pattern(db, req.text, top_k=req.top_k)
 

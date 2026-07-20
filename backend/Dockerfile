@@ -8,7 +8,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# torch alone is ~195MB, and pip's 15s default socket timeout makes this layer fail
+# on an ordinary connection hiccup. A failed build leaves the previously built
+# image in place, so the stack silently keeps serving stale code — be patient here
+# instead.
+RUN pip install --no-cache-dir --default-timeout=180 --retries 10 -r requirements.txt
 
 COPY . .
 RUN chmod +x entrypoint.sh

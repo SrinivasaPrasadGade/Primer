@@ -260,8 +260,17 @@ def _load_corpus_index():
     than re-embedding scam_script_corpus from the DB on every cold start — that's a
     full round trip plus a full corpus re-embed for data that's already indexed.
     Falls back to (None, []) if the artifacts are missing so callers degrade gracefully.
+
+    A missing faiss install degrades the same way. Until sessions carried a
+    transcript this path was unreachable, so an incomplete ML install surfaced as a
+    silently-zero signal; now it would 500 the whole classification instead of
+    costing one signal out of five.
     """
-    import faiss
+    try:
+        import faiss
+    except ImportError:
+        logger.warning("faiss is not installed — script similarity disabled")
+        return None, []
 
     index_path = ML_MODELS_DIR / "scam_corpus.faiss"
     meta_path = ML_MODELS_DIR / "scam_corpus_meta.json"
@@ -289,7 +298,13 @@ async def compute_script_similarity(text_content: str) -> SignalResult:
         return index.search(embedding, 1)
 
     # Embedding + FAISS search are CPU-bound; offload so they don't block the event loop.
-    scores, indices = await asyncio.to_thread(_search)
+    try:
+        scores, indices = await asyncio.to_thread(_search)
+    except ImportError:
+        # sentence-transformers/torch absent: same reasoning as _load_corpus_index —
+        # lose the signal, not the classification.
+        logger.warning("sentence-transformers is not installed — script similarity disabled")
+        return SignalResult(0.0, "Script corpus unavailable")
     top_idx = int(indices[0][0])
     if top_idx < 0 or top_idx >= len(rows):
         return SignalResult(0.0, "No corpus match found")
@@ -507,7 +522,7 @@ _SESSION_COLUMNS = """
     call_duration_sec, alert_level, overall_confidence, scam_type,
     scam_phase, signal_scores, spoofing_detected,
     real_originating_number, deepfake_detected,
-    voice_synthetic_probability, status, created_at, updated_at
+    voice_synthetic_probability, status, transcript_text, created_at, updated_at
 """
 
 

@@ -93,18 +93,52 @@ async def _sample_caller_numbers(db) -> list[str]:
     return [row[0] for row in rows]
 
 
+async def _sample_transcripts(db) -> list[str]:
+    """Real scam scripts from the corpus, used as simulated call transcripts.
+
+    script_similarity scores a transcript against this same corpus, so feeding
+    genuine entries is what makes that signal (and urgency_phrases) produce
+    non-zero scores instead of the "No transcript available" floor.
+    """
+    rows = (
+        await db.execute(
+            text("SELECT content FROM scam_sentinel.scam_script_corpus WHERE is_active LIMIT 50")
+        )
+    ).all()
+    return [row[0] for row in rows]
+
+
+# Ordinary calls, so the feed isn't uniformly hostile. Nothing here trips an
+# urgency phrase or resembles the corpus, which is the point.
+BENIGN_TRANSCRIPTS = [
+    "Hi, this is the clinic calling to confirm your appointment on Thursday morning.",
+    "Hello, your parcel is out for delivery today. No action needed from your side.",
+    "This is a reminder that your electricity bill is due at the end of the month.",
+    "Hi, just calling to check whether you are still interested in the flat viewing.",
+]
+
+
 def _random_callee() -> str:
     return "+919" + "".join(random.choice("0123456789") for _ in range(9))
 
 
-async def _insert_session(db, caller_numbers: list[str]) -> tuple[str, str]:
+async def _insert_session(db, caller_numbers: list[str], transcripts: list[str]) -> tuple[str, str]:
     """Insert one unclassified call record. Returns (session_id, caller_number)."""
     # Mostly known-bad callers, with a slice of unknown numbers so the feed isn't
     # uniformly red.
-    if caller_numbers and random.random() < 0.75:
+    scammy = random.random() < 0.7
+    if caller_numbers and scammy:
         caller = random.choice(caller_numbers)
     else:
         caller = _random_callee()
+
+    # Pair a flagged caller with a real scam script and an unknown caller with an
+    # ordinary one, so alert levels spread across RED/AMBER/YELLOW instead of
+    # clustering at one end.
+    if scammy and transcripts:
+        transcript = random.choice(transcripts)
+    else:
+        transcript = random.choice(BENIGN_TRANSCRIPTS)
 
     session_id = str(uuid4())
     duration = random.randint(45, 900)
@@ -115,10 +149,11 @@ async def _insert_session(db, caller_numbers: list[str]) -> tuple[str, str]:
             """
             INSERT INTO scam_sentinel.scam_sessions
                 (id, caller_number, callee_number, call_start, call_end,
-                 call_duration_sec, spoofing_detected, voice_synthetic_probability, status)
+                 call_duration_sec, spoofing_detected, voice_synthetic_probability,
+                 transcript_text, status)
             VALUES
                 (:id, :caller, :callee, :call_start, :call_end,
-                 :duration, :spoofing, :voice_prob, 'active')
+                 :duration, :spoofing, :voice_prob, :transcript, 'active')
             """
         ),
         {
@@ -128,6 +163,7 @@ async def _insert_session(db, caller_numbers: list[str]) -> tuple[str, str]:
             "call_start": call_start,
             "call_end": datetime.now(timezone.utc),
             "duration": duration,
+            "transcript": transcript,
             "spoofing": random.random() < 0.35,
             # 0-1, matching the seed data and what generate_voice_explanation expects.
             # Writing 0-100 here makes the voice signal dwarf the other four (all 0-1),
@@ -161,9 +197,13 @@ async def main(interval: float, count: int, api_url: str, email: str, password: 
             if not caller_numbers:
                 logger.warning("No rows in scam_sentinel.number_reputation - load 01_seed.sql for a "
                                "more varied feed. Falling back to random numbers.")
+            transcripts = await _sample_transcripts(db)
+            if not transcripts:
+                logger.warning("No rows in scam_sentinel.scam_script_corpus - every call will use a "
+                               "benign transcript, so alert levels will stay low.")
 
             while count == 0 or emitted < count:
-                session_id, caller = await _insert_session(db, caller_numbers)
+                session_id, caller = await _insert_session(db, caller_numbers, transcripts)
                 try:
                     result = await asyncio.to_thread(
                         _post, f"{api_url}/api/v1/scam/sessions/{session_id}/classify", None, token
