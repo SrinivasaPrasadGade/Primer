@@ -6,7 +6,7 @@ import { Card } from "@/components/shared/Card";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useApi } from "@/hooks/useApi";
-import { api, NOTE_DENOMINATIONS, NoteDenomination, NoteVerifyResult } from "@/lib/api";
+import { api, ApiError, CounterfeitSerial, NOTE_DENOMINATIONS, NoteDenomination, NoteVerifyResult } from "@/lib/api";
 import styles from "@/styles/dashboard.module.css";
 
 const VERDICT_CLASS: Record<string, string> = {
@@ -32,6 +32,31 @@ export default function NoteVerifyDashboard() {
     // The model has no denomination head, so the value has to come from the operator.
     const [denomination, setDenomination] = useState<NoteDenomination>(500);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [serial, setSerial] = useState("");
+    // "clean" means the lookup 404'd — the serial isn't in the registry, which is
+    // the good outcome and must not be rendered as an error.
+    const [serialResult, setSerialResult] = useState<CounterfeitSerial | "clean" | null>(null);
+    const [serialLoading, setSerialLoading] = useState(false);
+    const [serialError, setSerialError] = useState<string | null>(null);
+
+    async function handleSerialLookup() {
+        const query = serial.trim();
+        if (!query) return;
+        setSerialLoading(true);
+        setSerialError(null);
+        setSerialResult(null);
+        try {
+            setSerialResult(await api.getNoteSerial(query));
+        } catch (err) {
+            if (err instanceof ApiError && err.status === 404) {
+                setSerialResult("clean");
+            } else {
+                setSerialError(err instanceof Error ? err.message : "Lookup failed");
+            }
+        } finally {
+            setSerialLoading(false);
+        }
+    }
 
     const { data: stats, isLoading: statsLoading, mutate: mutateStats } = useApi("note-stats", () => api.getNoteStats());
     const { data: history, isLoading: historyLoading, mutate: mutateHistory } = useApi("note-history", () => api.getNoteHistory(10));
@@ -126,6 +151,50 @@ export default function NoteVerifyDashboard() {
                             Upload a note image to see the verdict and Explainable AI feature breakdown.
                         </p>
                     )}
+                </Card>
+            </div>
+
+            <div style={{ marginTop: 32 }}>
+                <h3 className={styles.sectionTitle} style={{ marginBottom: 16 }}>
+                    Counterfeit Serial Registry
+                </h3>
+                <Card>
+                    <form
+                        style={{ display: "flex", gap: 8 }}
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSerialLookup();
+                        }}
+                    >
+                        <input
+                            className={styles.notesDenominationSelect}
+                            style={{ flex: 1 }}
+                            placeholder="Serial number, e.g. 8AC 123456"
+                            value={serial}
+                            onChange={(e) => setSerial(e.target.value)}
+                        />
+                        <button className={styles.notesUploadButton} type="submit" disabled={!serial.trim() || serialLoading}>
+                            {serialLoading ? "Checking…" : "Look Up"}
+                        </button>
+                    </form>
+                    {serialResult === "clean" && (
+                        <p style={{ marginTop: 12, fontSize: 13 }} className={VERDICT_CLASS.GENUINE}>
+                            Not in the counterfeit registry.
+                        </p>
+                    )}
+                    {serialResult && serialResult !== "clean" && (
+                        <div style={{ marginTop: 12 }}>
+                            <p className={VERDICT_CLASS.COUNTERFEIT} style={{ fontSize: 13, fontWeight: 600 }}>
+                                Known counterfeit · ₹{serialResult.denomination}
+                            </p>
+                            <p style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
+                                Seen {serialResult.detection_count}× · first detected{" "}
+                                {new Date(serialResult.first_detected).toLocaleDateString()}
+                                {serialResult.source ? ` · source: ${serialResult.source}` : ""}
+                            </p>
+                        </div>
+                    )}
+                    {serialError && <p className={styles.notesError} style={{ marginTop: 12 }}>{serialError}</p>}
                 </Card>
             </div>
 

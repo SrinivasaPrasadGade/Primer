@@ -152,12 +152,12 @@ class ApiClient {
     }) => this.post<NoteVerifyResult>("/note/verify", payload);
     getNoteHistory = (limit?: number) => this.get<NoteHistoryEntry[]>(`/note/history${qs({ limit })}`);
     getNoteStats = () => this.get<NoteStats>("/note/stats");
-    getNoteSerial = (serial: string) => this.get(`/note/serials/${encodeURIComponent(serial)}`);
+    getNoteSerial = (serial: string) => this.get<CounterfeitSerial>(`/note/serials/${encodeURIComponent(serial)}`);
 
     // Fraud Graph
     getEntity = (type: string, value: string, depth = 2) =>
         this.get<GraphData>(`/graph/entity/${type}/${encodeURIComponent(value)}${qs({ depth })}`);
-    getCluster = (id: string) => this.get(`/graph/cluster/${id}`);
+    getCluster = (id: string) => this.get<ClusterDetail>(`/graph/cluster/${id}`);
     getMoneyFlow = (entityId: string) => this.get<MoneyFlowEdge[]>(`/graph/money-flow/${entityId}`);
     searchGraph = (query: string, limit = 20) => this.post<GraphSearchResult[]>(`/graph/search`, { query, limit });
     // Rendering HTML to PDF via WeasyPrint is slow enough to outrun the default deadline.
@@ -165,7 +165,7 @@ class ApiClient {
         this.post<{ cluster_id: string; pdf_path: string }>(`/graph/dossier/${clusterId}`, undefined, AI_TIMEOUT_MS);
     downloadDossier = (clusterId: string) => this.getBlob(`/graph/dossier/${clusterId}/download`);
     detectCommunities = (minClusterSize = 3) =>
-        this.post(`/graph/communities/detect${qs({ min_cluster_size: minClusterSize })}`);
+        this.post<DetectedCommunity[]>(`/graph/communities/detect${qs({ min_cluster_size: minClusterSize })}`);
 
     // Geo Intel
     getHeatmap = (bounds: string, type?: string, days?: number) =>
@@ -298,6 +298,14 @@ export interface NoteHistoryEntry {
     created_at: string;
 }
 
+export interface CounterfeitSerial {
+    serial_number: string;
+    denomination: number;
+    first_detected: string;
+    detection_count: number;
+    source: string | null;
+}
+
 export interface NoteStats {
     total_scans: number;
     genuine_count: number;
@@ -323,6 +331,40 @@ export interface GraphEdge {
 export interface GraphData {
     nodes: GraphNode[];
     edges: GraphEdge[];
+}
+
+export interface Cluster {
+    id: string;
+    name: string | null;
+    node_count: number;
+    edge_count: number;
+    estimated_loss: number;
+    victim_count: number;
+    status: string;
+    detected_at: string;
+}
+
+export interface ClusterEntity {
+    id: string;
+    entity_type: string;
+    entity_value: string;
+    display_label: string | null;
+    risk_score: number | null;
+    first_seen: string | null;
+    last_seen: string | null;
+}
+
+export interface ClusterDetail {
+    cluster: Cluster;
+    entities: ClusterEntity[];
+    edges: GraphEdge[];
+}
+
+/** One community as returned by persist_communities — not a full cluster row. */
+export interface DetectedCommunity {
+    cluster_id: string;
+    node_count: number;
+    edge_count: number;
 }
 
 export interface GraphSearchResult {

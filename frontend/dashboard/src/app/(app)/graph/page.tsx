@@ -3,11 +3,12 @@ import { FormEvent, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { GraphCanvas } from "@/components/graph/GraphCanvas";
 import { EntityPanel } from "@/components/graph/EntityPanel";
+import { ClusterPanel } from "@/components/graph/ClusterPanel";
 import { MoneyFlowPanel } from "@/components/graph/MoneyFlowPanel";
 import { CopilotBar } from "@/components/graph/CopilotBar";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useApi } from "@/hooks/useApi";
-import { api, GraphSearchResult, MoneyFlowEdge } from "@/lib/api";
+import { api, ClusterEntity, GraphSearchResult, MoneyFlowEdge } from "@/lib/api";
 import styles from "@/styles/graph.module.css";
 
 export default function FraudGraphExplorer() {
@@ -43,6 +44,22 @@ export default function FraudGraphExplorer() {
         } catch {
             setMoneyFlow({ nodeId, edges: [] });
         }
+    }
+
+    // Focusing an entity from a cluster carries its cluster_id across, so the
+    // dossier action stays available on the entity panel.
+    function handleFocusClusterEntity(entity: ClusterEntity, clusterId: string) {
+        setSelected({
+            id: entity.id,
+            entity_type: entity.entity_type,
+            entity_value: entity.entity_value,
+            display_label: entity.display_label,
+            risk_score: entity.risk_score,
+            cluster_id: clusterId,
+        });
+        setResults([]);
+        setSelectedNodeId(null);
+        setMoneyFlow(null);
     }
 
     function handleNodeClick(nodeId: string) {
@@ -109,6 +126,7 @@ export default function FraudGraphExplorer() {
                 <div>
                     <EntityPanel node={selectedNode} clusterId={selected?.cluster_id ?? null} onViewMoneyFlow={handleViewMoneyFlow} />
                     {moneyFlow && <MoneyFlowPanel edges={moneyFlow.edges} nodeId={moneyFlow.nodeId} />}
+                    <ClusterPanel onFocusEntity={handleFocusClusterEntity} />
                 </div>
             </div>
         </>

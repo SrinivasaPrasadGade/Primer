@@ -7,3 +7,6 @@ export const DEMO_CITIZEN_EMAIL = "sumanth@primer.demo";
 export const DEMO_CITIZEN_PASSWORD = "Primer@2026";
 
 export const TOKEN_STORAGE_KEY = "primer_mobile_token";
+// Persisting the chat session id is what lets an interrupted conversation be
+// restored from /citizen/chat/{id}/history after the app is reopened.
+export const CHAT_SESSION_STORAGE_KEY = "primer_mobile_chat_session";

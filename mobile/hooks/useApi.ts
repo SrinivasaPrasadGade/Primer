@@ -90,6 +90,11 @@ class ApiClient {
     citizenChat = (message: string, sessionId?: string | null) =>
         this.post<CitizenChatResponse>("/citizen/chat", { message, session_id: sessionId ?? null });
 
+    getCitizenChatHistory = (sessionId: string) =>
+        this.get<CitizenChatMessage[]>(`/citizen/chat/${sessionId}/history`);
+    closeCitizenChat = (sessionId: string) =>
+        this.post<{ session_id: string; status: string }>(`/citizen/chat/${sessionId}/close`);
+
     triggerPanic = (payload: {
         caller_number?: string;
         call_duration_sec?: number;
@@ -157,6 +162,14 @@ export interface CitizenChatResponse {
 // Field names mirror the /panic/trigger response exactly. They previously did not
 // (`id`/`fraud_report_path` vs the API's `report_id`/`fraud_report_url`), so every
 // read of them was silently undefined.
+/** A stored chat turn as returned by /citizen/chat/{id}/history. */
+export interface CitizenChatMessage {
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+    created_at: string;
+}
+
 export interface PanicResult {
     report_id: string;
     // Stays false until something actually sends a notification; `on_file` only
