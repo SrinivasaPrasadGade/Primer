@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: primer
       POSTGRES_PASSWORD: primer_dev
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./backend/seed_data/00_extensions.sql:/docker-entrypoint-initdb.d/00_extensions.sql:ro
@@ -49,7 +49,10 @@ services:
       - ./uploads:/app/uploads
 
   dashboard:
-    build: ./frontend/dashboard
+    build:
+      context: ./frontend/dashboard
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
     container_name: primer-dashboard
     ports:
       - "3000:3000"

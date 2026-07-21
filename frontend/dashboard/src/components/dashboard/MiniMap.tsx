@@ -1,9 +1,11 @@
 "use client";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { CrimeMap } from "@/components/geo/CrimeMap";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
 import styles from "@/styles/dashboard.module.css";
+
+const CrimeMap = dynamic(() => import("@/components/geo/CrimeMap").then((m) => ({ default: m.CrimeMap })), { ssr: false });
 
 const DEFAULT_BOUNDS = "72.77,18.89,72.99,19.27";
 

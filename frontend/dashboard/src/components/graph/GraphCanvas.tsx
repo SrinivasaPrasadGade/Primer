@@ -20,8 +20,8 @@ const NODE_COLORS: Record<string, string> = {
     complaint: "#EF4444",
 };
 
-const EDGE_MIN_WIDTH = 1;
-const EDGE_MAX_WIDTH = 6;
+const EDGE_MIN_WIDTH = 0.4;
+const EDGE_MAX_WIDTH = 2.5;
 
 
 /**
@@ -51,6 +51,7 @@ function buildGraph(data: GraphData) {
             label: node.display_label || node.entity_value || node.id,
             size: Math.max(8, (node.risk_score || 10) / 5),
             color: NODE_COLORS[node.entity_type] || "#666",
+            entityType: node.entity_type,
         });
     });
 

@@ -22,16 +22,25 @@ export const ACTIVE_EDGE = "rgba(96,165,250,0.6)";
  * colour is the graph's primary encoding, so overriding it on the focused node
  * would cost more information than the highlight adds.
  */
+// Phone numbers are the densest, most repetitive label on the canvas — with
+// a full cluster on screen they stack into unreadable text. They're picked
+// from the dropdown instead, so the canvas only prints one once it's
+// selected (or a neighbour of the selection).
+const LABEL_HIDDEN_BY_DEFAULT = new Set(["phone_number"]);
+
 export function focusNode(
     graph: Graph,
     selected: string | null,
     node: string,
     attrs: Attributes,
 ): Partial<NodeDisplayData> {
+    const hideByDefault = LABEL_HIDDEN_BY_DEFAULT.has(attrs.entityType as string);
     // A selection naming a node that isn't in this graph (a stale id left over
     // from the previously inspected entity) must fall back to the unfocused
     // view rather than dimming every node at once.
-    if (!selected || !graph.hasNode(selected)) return attrs;
+    if (!selected || !graph.hasNode(selected)) {
+        return hideByDefault ? { ...attrs, label: null } : attrs;
+    }
     if (node === selected) {
         return { ...attrs, size: (attrs.size ?? 1) * 1.45, highlighted: true, forceLabel: true, zIndex: 2 };
     }

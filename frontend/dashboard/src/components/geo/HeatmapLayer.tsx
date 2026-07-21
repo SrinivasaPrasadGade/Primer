@@ -1,51 +1,34 @@
 "use client";
-import { useEffect } from "react";
-import type mapboxgl from "mapbox-gl";
+import { useEffect, useRef } from "react";
+import L from "leaflet";
 import { HeatmapCell } from "@/lib/api";
 
-// Manages the crime heatmap source + layer on a given Mapbox map instance.
-// Red-orange-yellow gradient per UI/UX §6.3.
-export function HeatmapLayer({ map, data }: { map: mapboxgl.Map | null; data: HeatmapCell[] }) {
+export function HeatmapLayer({ map, data }: { map: L.Map | null; data: HeatmapCell[] }) {
+    const layerRef = useRef<L.LayerGroup | null>(null);
+
     useEffect(() => {
         if (!map) return;
 
-        function setup() {
-            if (!map || map.getSource("heatmap-points")) return;
-            map.addSource("heatmap-points", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-            map.addLayer({
-                id: "heatmap-layer",
-                type: "heatmap",
-                source: "heatmap-points",
-                paint: {
-                    "heatmap-weight": ["get", "intensity"],
-                    "heatmap-intensity": 1.2,
-                    "heatmap-color": [
-                        "interpolate", ["linear"], ["heatmap-density"],
-                        0, "rgba(234,179,8,0)",
-                        0.35, "rgba(234,179,8,0.6)",
-                        0.65, "rgba(245,158,11,0.75)",
-                        1, "rgba(239,68,68,0.9)",
-                    ],
-                    "heatmap-radius": 28,
-                },
-            });
+        if (!layerRef.current) {
+            layerRef.current = L.layerGroup().addTo(map);
         }
 
-        if (map.isStyleLoaded()) setup();
-        else map.on("load", setup);
-    }, [map]);
+        layerRef.current.clearLayers();
 
-    useEffect(() => {
-        if (!map) return;
-        const source = map.getSource("heatmap-points") as mapboxgl.GeoJSONSource | undefined;
-        if (!source) return;
-        source.setData({
-            type: "FeatureCollection",
-            features: data.map((cell) => ({
-                type: "Feature",
-                geometry: { type: "Point", coordinates: [cell.lng, cell.lat] },
-                properties: { intensity: cell.intensity, crime_type: cell.crime_type },
-            })),
+        data.forEach((cell) => {
+            const intensity = Math.min(cell.intensity, 1);
+            const color = intensity > 0.65 ? "#EF4444" : intensity > 0.35 ? "#F59E0B" : "#EAB308";
+
+            const marker = L.circleMarker([cell.lat, cell.lng], {
+                radius: 4,
+                fillColor: color,
+                color: color,
+                weight: 0,
+                opacity: 1,
+                fillOpacity: intensity * 0.7,
+            });
+
+            marker.addTo(layerRef.current!);
         });
     }, [map, data]);
 

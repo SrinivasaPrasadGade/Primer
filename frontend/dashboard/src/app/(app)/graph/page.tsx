@@ -69,6 +69,7 @@ export default function FraudGraphExplorer() {
     }
 
     const selectedNode = graphData?.nodes.find((n) => n.id === selectedNodeId) ?? null;
+    const phoneNumberNodes = graphData?.nodes.filter((n) => n.entity_type === "phone_number") ?? [];
 
     return (
         <>
@@ -87,6 +88,24 @@ export default function FraudGraphExplorer() {
                             Search
                         </button>
                     </form>
+
+                    {/* Phone numbers are the majority of nodes in a cluster and make the
+                        canvas unreadable if every one prints its own label — pick one here
+                        instead; the canvas only shows the label for whichever is selected. */}
+                    {phoneNumberNodes.length > 0 && (
+                        <select
+                            className={styles.numberSelect}
+                            value={selectedNodeId ?? ""}
+                            onChange={(e) => handleNodeClick(e.target.value)}
+                        >
+                            <option value="">Select a phone number…</option>
+                            {phoneNumberNodes.map((n) => (
+                                <option key={n.id} value={n.id}>
+                                    {n.display_label || n.entity_value}
+                                </option>
+                            ))}
+                        </select>
+                    )}
 
                     {searchError && <p style={{ color: "var(--color-text-tertiary)", fontSize: 12 }}>{searchError}</p>}
 

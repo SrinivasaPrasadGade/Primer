@@ -128,7 +128,7 @@ async def summarize_and_store(
                 "related_complaints": json.dumps(summary.get("related_complaints", [])),
                 "confidence_score": summary.get("confidence_score", 0),
                 "source_evidence": [f"{entity_type}:{entity_value}"],
-                "generated_by": generated_by,
+                "generated_by": str(generated_by),
             },
         )
     ).mappings().first()

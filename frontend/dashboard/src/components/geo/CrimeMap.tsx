@@ -1,15 +1,15 @@
 "use client";
 import { CSSProperties, useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import L, { LatLngBounds } from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { GeoIncident, HeatmapCell, HotspotPrediction } from "@/lib/api";
 import { HeatmapLayer } from "./HeatmapLayer";
 import styles from "@/styles/geo.module.css";
 
-const MUMBAI_CENTER: [number, number] = [72.88, 19.07];
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+const MUMBAI_CENTER: [number, number] = [19.07, 72.88];
+const DEFAULT_ZOOM = 11;
 
-function toBoundsString(bounds: mapboxgl.LngLatBounds): string {
+function toBoundsString(bounds: LatLngBounds): string {
     return [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()].map((n) => n.toFixed(5)).join(",");
 }
 
@@ -33,100 +33,87 @@ export function CrimeMap({
     zoom?: number;
 }) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const mapRef = useRef<mapboxgl.Map | null>(null);
-    const [map, setMap] = useState<mapboxgl.Map | null>(null);
+    const mapRef = useRef<L.Map | null>(null);
+    const [map, setMap] = useState<L.Map | null>(null);
+    const incidentsLayerRef = useRef<L.LayerGroup | null>(null);
+    const predictionsLayerRef = useRef<L.LayerGroup | null>(null);
 
     useEffect(() => {
         if (!containerRef.current || mapRef.current) return;
-        mapboxgl.accessToken = MAPBOX_TOKEN;
 
-        const m = new mapboxgl.Map({
-            container: containerRef.current,
-            style: "mapbox://styles/mapbox/dark-v11",
-            center: MUMBAI_CENTER,
-            zoom,
-            interactive,
-        });
+        const m = L.map(containerRef.current).setView(MUMBAI_CENTER, zoom);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19,
+        }).addTo(m);
+
         mapRef.current = m;
 
-        m.on("load", () => {
-            m.addSource("incidents", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-            m.addLayer({
-                id: "incidents-layer",
-                type: "circle",
-                source: "incidents",
-                paint: {
-                    // Colour-coded by crime type (UI/UX §6.3)
-                    "circle-radius": 5,
-                    "circle-color": [
-                        "match", ["get", "crime_type"],
-                        "cyber_fraud", "#3B82F6",
-                        "upi_fraud", "#F59E0B",
-                        "phishing", "#A855F7",
-                        "extortion", "#EF4444",
-                        "counterfeit", "#22C55E",
-                        "#EF4444",
-                    ],
-                    "circle-stroke-width": 1,
-                    "circle-stroke-color": "#fff",
-                },
-            });
+        // Create layer groups for incidents and predictions
+        incidentsLayerRef.current = L.layerGroup().addTo(m);
+        predictionsLayerRef.current = L.layerGroup().addTo(m);
 
-            m.addSource("predictions", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-            m.addLayer({
-                id: "predictions-layer",
-                type: "circle",
-                source: "predictions",
-                paint: {
-                    "circle-radius": ["interpolate", ["linear"], ["get", "radius_km"], 0, 10, 5, 50],
-                    "circle-color": "rgba(245,158,11,0.15)",
-                    "circle-stroke-width": 1.5,
-                    "circle-stroke-color": "#F59E0B",
-                },
-            });
+        m.on("moveend", () => onBoundsChange(toBoundsString(m.getBounds())));
+        onBoundsChange(toBoundsString(m.getBounds()));
+        setMap(m);
 
-            m.on("click", "incidents-layer", (e) => {
-                const feature = e.features?.[0];
-                if (feature?.properties) onIncidentClick(feature.properties as unknown as GeoIncident);
-            });
-
-            onBoundsChange(toBoundsString(m.getBounds()!));
-            setMap(m);
-        });
-
-        m.on("moveend", () => onBoundsChange(toBoundsString(m.getBounds()!)));
+        if (!interactive) m.dragging.disable();
 
         return () => {
             m.remove();
             mapRef.current = null;
+            incidentsLayerRef.current = null;
+            predictionsLayerRef.current = null;
             setMap(null);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
-        if (!map || !map.getSource("incidents")) return;
-        (map.getSource("incidents") as mapboxgl.GeoJSONSource).setData({
-            type: "FeatureCollection",
-            features: incidents.map((incident) => ({
-                type: "Feature",
-                geometry: { type: "Point", coordinates: [incident.lng, incident.lat] },
-                properties: incident,
-            })),
+        if (!incidentsLayerRef.current) return;
+        incidentsLayerRef.current.clearLayers();
+
+        incidents.forEach((incident) => {
+            const color = {
+                cyber_fraud: "#3B82F6",
+                upi_fraud: "#F59E0B",
+                phishing: "#A855F7",
+                extortion: "#EF4444",
+                counterfeit: "#22C55E",
+            }[incident.crime_type] || "#EF4444";
+
+            const marker = L.circleMarker([incident.lat, incident.lng], {
+                radius: 5,
+                fillColor: color,
+                color: "#fff",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8,
+            });
+
+            marker.on("click", () => onIncidentClick(incident));
+            marker.addTo(incidentsLayerRef.current!);
         });
-    }, [map, incidents]);
+    }, [incidents, onIncidentClick]);
 
     useEffect(() => {
-        if (!map || !map.getSource("predictions")) return;
-        (map.getSource("predictions") as mapboxgl.GeoJSONSource).setData({
-            type: "FeatureCollection",
-            features: predictions.map((p) => ({
-                type: "Feature",
-                geometry: { type: "Point", coordinates: [p.lng, p.lat] },
-                properties: p,
-            })),
+        if (!predictionsLayerRef.current) return;
+        predictionsLayerRef.current.clearLayers();
+
+        predictions.forEach((p) => {
+            const radius = Math.min(Math.max(p.radius_km * 10, 10), 50);
+            const circle = L.circleMarker([p.lat, p.lng], {
+                radius,
+                fillColor: "rgba(245,158,11,0.15)",
+                color: "#F59E0B",
+                weight: 1.5,
+                opacity: 1,
+                fillOpacity: 0.15,
+            });
+
+            circle.addTo(predictionsLayerRef.current!);
         });
-    }, [map, predictions]);
+    }, [predictions]);
 
     return (
         <>

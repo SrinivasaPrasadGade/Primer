@@ -80,7 +80,7 @@ def _load_note_auth_net():
     import torch
 
     model = _build_note_auth_net()
-    state_dict = torch.load(ML_MODELS_DIR / "note_auth_net.pth", map_location="cpu", weights_only=True)
+    state_dict = torch.load(ML_MODELS_DIR / "note_auth_net.pth", map_location="cpu", weights_only=False)
     model.load_state_dict(state_dict)
     model.eval()
     return model
